@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Saved Checks for {{ account_name }}</title>
+    <style>
+        table {
+            border-collapse: collapse;
+            width: 100%;
+            margin-top: 20px;
+        }
+        th, td {
+            border: 1px solid #ccc;
+            padding: 10px;
+            vertical-align: top;
+        }
+        th {
+            background-color: #2ecc71;
+            color: white;
+        }
+        img.evidence-preview {
+            max-width: 150px;
+            max-height: 100px;
+            display: block;
+            margin: 5px auto;
+        }
+    </style>
+</head>
+<body>
+    <h2>Saved Checks for {{ account_name }}</h2>
+    <table>
+        <thead>
+            <tr>
+                <th>Check ID</th>
+                <th>Check Name</th>
+                <th>How to Perform</th>
+                <th>Expected Outcome</th>
+                <th>Evidence</th>
+                <th>Pass/Fail</th>
+                <th>Additional Notes</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for row in rows[1:] %}  {# Skip the first row which is the header #}
+            <tr>
+                {% for col in row %}
+                    {% if loop.index == 5 and 'http' in col %}
+                        <td><img src="{{ col }}" alt="evidence" class="evidence-preview"></td>
+                    {% else %}
+                        <td>{{ col }}</td>
+                    {% endif %}
+                {% endfor %}
+            </tr>
+            {% endfor %}
+        </tbody>
+        
+    </table>
+</body>
+</html>
