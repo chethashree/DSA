@@ -69,6 +69,84 @@ Sow
   </table>
 </div>
 
+
+
+******************************************************************************
+Sow
+
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Multi-page PDF Export</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 40px;
+    }
+
+    .export-button {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      background-color: #2ecc71;
+      border: none;
+      color: white;
+      padding: 10px 20px;
+      border-radius: 6px;
+      cursor: pointer;
+      z-index: 999;
+    }
+
+    .content {
+      max-width: 800px;
+      margin: auto;
+    }
+
+    .section {
+      margin-bottom: 50px;
+    }
+  </style>
+</head>
+<body>
+
+<button onclick="downloadPDF()" class="export-button">Export as PDF</button>
+
+<div class="content" id="pdf-content">
+  <h1>Saved Checks Report</h1>
+
+  <!-- Repeat sections to simulate long content -->
+  <div class="section">
+    <h2>System Status Overview</h2>
+    <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Suspendisse commodo urna eu ligula pharetra, a scelerisque nisi ultrices.</p>
+  </div>
+
+  <!-- Add more sections to create multi-page content -->
+  <div class="section"><h3>Page 2 Data</h3><p>More content here...</p></div>
+  <div class="section"><h3>Page 3 Data</h3><p>Even more content here...</p></div>
+  <div class="section"><h3>Page 4 Data</h3><p>More and more...</p></div>
+  <div class="section"><h3>Page 5 Data</h3><p>Just to be safe, we add more...</p></div>
+</div>
+
+<script>
+  function downloadPDF() {
+    const element = document.getElementById('pdf-content');
+
+    html2pdf().set({
+      margin:       [10, 10, 10, 10], // top, left, bottom, right (in mm)
+      filename:     'webpage_report.pdf',
+      image:        { type: 'jpeg', quality: 0.98 },
+      html2canvas:  { scale: 2, useCORS: true },
+      jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' },
+      pagebreak:    { mode: ['avoid-all', 'css', 'legacy'] }  // Ensures proper page splitting
+    }).from(element).save();
+  }
+</script>
+
+</body>
+</html>
+
 <!-- Export button -->
 <div style="text-align: center;">
   <button onclick="downloadPDF()" class="export-button">Export</button>
