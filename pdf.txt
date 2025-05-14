@@ -1,0 +1,93 @@
+pip install playwright
+playwright install
+
+*****************************************
+
+from playwright.sync_api import sync_playwright
+
+url = 'https://example.com'
+output_pdf = 'webpage_with_images.pdf'
+
+with sync_playwright() as p:
+    browser = p.chromium.launch()
+    page = browser.new_page()
+    page.goto(url, wait_until='networkidle')  # Wait for images and JS
+    page.pdf(path=output_pdf, format='A4')
+    browser.close()
+
+print("PDF saved:", output_pdf)
+***********************************************
+
+pip install pdfkit
+***********************************************
+import pdfkit
+
+# Optional: specify path if wkhtmltopdf isn't in PATH
+# path_wkhtmltopdf = r'C:\Program Files\wkhtmltopdf\bin\wkhtmltopdf.exe'
+# config = pdfkit.configuration(wkhtmltopdf=path_wkhtmltopdf)
+
+url = 'https://example.com'
+output_pdf = 'webpage_with_images.pdf'
+
+# This will include images, CSS, etc., if the page is static
+pdfkit.from_url(url, output_pdf)  # add config=config if needed
+
+print("Saved:", output_pdf)
+**************************************************
+
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Export to PDF</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+  <style>
+    #content {
+      width: 800px;
+      padding: 20px;
+      background: #fff;
+      border: 1px solid #ddd;
+    }
+    img {
+      max-width: 100%;
+    }
+  </style>
+</head>
+<body>
+
+<div id="content">
+  <h1>My Web Page</h1>
+  <p>This is the content that will be exported as PDF.</p>
+  <img src="https://via.placeholder.com/600x300.png?text=Sample+Image" alt="Sample Image">
+</div>
+
+<br>
+
+<button onclick="downloadPDF()">Export as PDF</button>
+
+<script>
+function downloadPDF() {
+  const element = document.getElementById('content');
+
+  const images = element.getElementsByTagName('img');
+  const promises = Array.from(images).map(img => {
+    if (img.complete) return Promise.resolve();
+    return new Promise(resolve => img.onload = resolve);
+  });
+
+  Promise.all(promises).then(() => {
+    html2pdf().from(element).set({
+      margin: 1,
+      filename: 'webpage.pdf',
+      image: { type: 'jpeg', quality: 0.98 },
+      html2canvas: { scale: 2 },
+      jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' }
+    }).save();
+  });
+}
+</script>
+
+</body>
+</html>
+***********************************************************************************
+
+
