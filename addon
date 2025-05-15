@@ -1,0 +1,1183 @@
+    <!DOCTYPE html>
+    <html lang="en">
+
+    <head>
+        <meta charset="UTF-8">
+        <title>Flask XML Dashboard</title>
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <style>
+            
+    
+    #createContainer {
+        background-color: #fff;
+        padding: 25px 30px;
+        border-radius: 16px;
+        box-shadow: 0 4px 18px rgba(0, 0, 0, 0.1);
+        max-width: 100%;
+        overflow-x: auto;
+    }
+
+    #createContainer h3 {
+        color: #2c3e50;
+        margin-bottom: 20px;
+        font-size: 1.6em;
+        border-bottom: 2px solid #2ecc71;
+        padding-bottom: 10px;
+    }
+
+    #checkTable {
+        width: 100%;
+        border-collapse: collapse;
+        margin-bottom: 20px;
+        font-size: 1em;
+    }
+
+    #checkTable th,
+    #checkTable td {
+        border: 1px solid #ddd;
+        padding: 0;
+        vertical-align: middle;
+    }
+
+    #checkTable th {
+        background-color: #2ecc71;
+        color: white;
+        font-weight: bold;
+        font-size: 1em;
+        padding: 12px;
+    }
+
+    #checkTable tr:nth-child(even) {
+        background-color: #f9f9f9;
+    }
+
+    #checkTable tr:hover {
+        background-color: #f1fcf5;
+    }
+
+    #checkTable input[type="text"] {
+        width: 100%;
+        padding: 10px 12px;
+        border: none;
+        border-radius: 0;
+        font-size: 0.95em;
+        background-color: transparent;
+        box-sizing: border-box;
+        height: 100%;
+    }
+
+    #checkTable input[type="text"]:focus {
+        outline: none;
+        background-color: #eafaf1;
+    }
+
+    #createContainer button {
+        background-color: #2ecc71;
+        color: white;
+        font-weight: bold;
+        padding: 10px 22px;
+        margin-right: 12px;
+        border: none;
+        border-radius: 8px;
+        font-size: 1em;
+        cursor: pointer;
+        transition: background-color 0.3s ease, transform 0.2s ease;
+        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+    }
+
+    #createContainer button:hover {
+        background-color: #27ae60;
+        transform: scale(1.05);
+    }
+
+    #createContainer button:active {
+        background-color: #1e8449;
+    }
+
+    
+    #viewContainer {
+        background-color: #ffffff;
+        padding: 25px 30px;
+        border-radius: 16px;
+        box-shadow: 0 4px 18px rgba(0, 0, 0, 0.08);
+        margin-top: 20px;
+        overflow-x: auto;
+    }
+
+    #viewContainer h3 {
+        color: #2c3e50;
+        margin-bottom: 20px;
+        font-size: 1.6em;
+        border-bottom: 2px solid #2ecc71;
+        padding-bottom: 10px;
+    }
+
+    #previewTable {
+        width: 100%;
+        border-collapse: collapse;
+        margin-bottom: 20px;
+        font-size: 0.95em;
+    }
+
+    #previewTable th,
+    #previewTable td {
+        border: 1px solid #ddd;
+        padding: 12px 14px;
+        text-align: left;
+        vertical-align: middle;
+    }
+
+    #previewTable th {
+        background-color: #2ecc71;
+        color: white;
+        font-weight: bold;
+        font-size: 1em;
+    }
+
+    #previewTable tr:nth-child(even) {
+        background-color: #f9f9f9;
+    }
+
+    #previewTable tr:hover {
+        background-color: #f1fcf5;
+        transition: background-color 0.2s ease;
+    }
+
+    .evidence-cell {
+        text-align: center;
+    }
+
+    .drop-area {
+        border: 2px dashed #aaa;
+        padding: 20px;
+        text-align: center;
+        color: #777;
+        border-radius: 8px;
+        background-color: #fdfdfd;
+        transition: background-color 0.3s ease;
+    }
+
+    .drop-area:hover {
+        background-color: #e0f7e9;
+        cursor: pointer;
+    }
+
+    .evidence-cell img {
+        max-width: 220px;
+        margin-top: 10px;
+        border-radius: 8px;
+        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+    }
+
+    #saveForm button {
+        background-color: #2ecc71;
+        color: white;
+        font-weight: bold;
+        padding: 12px 24px;
+        border: none;
+        border-radius: 8px;
+        font-size: 1em;
+        cursor: pointer;
+        transition: background-color 0.3s ease, transform 0.2s ease;
+        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+    }
+
+    #saveForm button:hover {
+        background-color: #27ae60;
+        transform: scale(1.05);
+    }
+
+    #saveForm button:active {
+        background-color: #1e8449;
+    }
+
+    /* Radio alignment */
+    td label {
+        margin-right: 10px;
+    }
+
+
+
+
+
+            body {
+                margin: 0;
+                font-family: 'Segoe UI', sans-serif;
+                background: #f4f9f4;
+            }
+
+            header {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                padding: 10px 20px;
+                background-color: #2ecc71;
+                color: white;
+                flex-wrap: wrap;
+            }
+
+            header img {
+                height: 30px;
+                margin-right: 10px;
+            }
+
+            header span {
+                font-size: 1.4em;
+            }
+
+            .btn-group button {
+                background-color: white;
+                border: none;
+                padding: 4px 8px;
+                margin-left: 10px;
+                color: #2ecc71;
+                border-radius: 6px;
+                cursor: pointer;
+                font-weight: bold;
+            }
+
+            .btn-group button:hover {
+                background-color: #27ae60;
+                color: white;
+            }
+
+            .container {
+                display: flex;
+                flex-wrap: wrap;
+            }
+
+            .sidebar {
+                width: 200px;
+                padding: 10px;
+                overflow-y: auto;
+                border-left: 2px solid #ccc;
+                max-height: 85vh;
+                background-color: #ecf9ec;
+}
+
+
+            .sidebar button {
+                width: 50%;
+                margin-bottom: 15px;
+                padding: 4px 8px;
+                background-color: #2ecc71;
+                color: white;
+                border: none;
+                border-radius: 6px;
+                cursor: pointer;
+            }
+
+            .sidebar button:disabled {
+                background-color: #ccc;
+            }
+
+            .main {
+                flex: 1;
+                padding: 30px;
+                min-width: 300px;
+            }
+
+            .form-box {
+                max-width: 400px;
+                margin: 0 auto;
+                background: white;
+                padding: 30px;
+                border-radius: 12px;
+                box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            }
+
+            label {
+                display: block;
+                margin: 10px 0 5px;
+                color: #2c3e50;
+            }
+
+            input[type="text"],
+            input[type="file"] {
+                width: 100%;
+                padding: 10px;
+                border-radius: 6px;
+                border: 1px solid #ccc;
+            }
+
+            .form-box button {
+                width: 100%;
+                margin-top: 15px;
+                padding: 12px;
+                background-color: #2ecc71;
+                color: white;
+                border: none;
+                border-radius: 6px;
+                cursor: pointer;
+            }
+
+            .toggle-link {
+                text-align: center;
+                margin-top: 15px;
+            }
+
+            .toggle-link a {
+                color: #2ecc71;
+                text-decoration: none;
+            }
+
+            .dashboard-wrapper {
+                display: flex;
+                flex-direction: row;
+                justify-content: flex-start;
+                align-items: center;
+                padding: 12px 16px;
+                background-color: #eafaf1;
+                border-radius: 10px;
+                margin-top: 15px;
+                box-shadow: 0 2px 5px rgba(0, 0, 0, 0.08);
+                font-size: 0.9em;
+            }
+
+            .dashboard-content {
+                padding: 14px 18px;
+                background: white;
+                border-radius: 10px;
+                box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+                color: #2c3e50;
+                font-size: 0.95em;
+                line-height: 1.4em;
+            }
+
+            /* Table Styling */
+            #checksTable {
+                width: 100%;
+                border-collapse: collapse;
+                margin-top: 20px;
+            }
+
+            #checksTable th,
+            #checksTable td {
+                padding: 12px 15px;
+                text-align: left;
+                border: 1px solid #ddd;
+                font-size: 0.95em;
+            }
+
+            #checksTable th {
+                background-color: #2ecc71;
+                color: white;
+            }
+
+            #checksTable td {
+                background-color: #f9f9f9;
+            }
+
+            #checksTable tr:hover {
+                background-color: #ecf9ec;
+                cursor: pointer;
+            }
+
+            #checksTable td input[type="file"] {
+                margin-top: 10px;
+            }
+
+             
+
+            /* Responsive tweaks */
+            @media (max-width: 768px) {
+                header {
+                    flex-direction: column;
+                    align-items: flex-start;
+                    gap: 10px;
+                }
+
+                .container {
+                    flex-direction: column;
+                }
+
+                .sidebar {
+                    width: 100%;
+                }
+
+                .main {
+                    padding: 20px;
+                }
+            }
+
+        #saveForm {
+        margin-top: 20px;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+    }
+
+    #saveForm button {
+        background-color: #28a745; /* Green */
+        color: white;
+        font-size: 16px;
+        padding: 10px 20px;
+        border: none;
+        border-radius: 8px;
+        cursor: pointer;
+        transition: background-color 0.3s ease, transform 0.2s ease;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    }
+
+    #saveForm button:hover {
+        background-color: #218838;
+        transform: scale(1.05);
+    }
+
+    #saveForm button:active {
+        background-color: #1e7e34;
+    }
+    #screenshotSidebar {
+    position: fixed;
+    top: 100px;
+    left: 100px;
+    width: 250px;
+    background-color: #f9f9f9;
+    border: 1px solid #ccc;
+    padding: 10px;
+    border-radius: 8px;
+    box-shadow: 0 0 10px rgba(0,0,0,0.2);
+    z-index: 9999;
+    cursor: move;
+}
+
+.scrollable {
+    max-height: 200px;
+    overflow-y: auto;
+    margin-top: 10px;
+    border-top: 1px solid #ddd;
+    padding-top: 10px;
+}
+
+            #screenshotsList img {
+                width: 100%;
+                border: 1px solid #aaa;
+                border-radius: 8px;
+                box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+                cursor: grab;
+                margin-bottom: 10px;
+            }
+
+            .drop-area {
+                border: 1px dashed #aaa;
+                padding: 10px;
+                text-align: center;
+                background-color: #fff;
+            }
+            #screenshotSidebar h4 {
+            margin-top: 0;
+            font-size: 1.1em;
+            color: #2c3e50;
+            }
+
+            #activateScreenshotBtn {
+            background-color: #2ecc71;
+            border: none;
+            color: white;
+            padding: 8px 16px;
+            margin-bottom: 10px;
+            border-radius: 6px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background-color 0.3s ease, transform 0.2s ease;
+            width: 100%;
+            }
+
+            #activateScreenshotBtn:hover {
+            background-color: #27ae60;
+            transform: scale(1.03);
+            }
+
+
+            .container {
+                display: flex;
+            }
+            .sidebar {
+                width: 250px;
+                padding: 10px;
+                background-color: #ecf9ec;
+                overflow-y: auto;
+                max-height: 90vh;
+            }
+            .scrollable {
+                overflow-y: auto;
+                max-height: 80vh;
+            }
+            .screenshot-img {
+                width: 100%;
+                margin-bottom: 10px;
+                border-radius: 6px;
+            }
+
+        </style>
+    </head>
+
+    <body>
+        <header>
+            <div style="display: flex; align-items: center;">
+                <img src="{{ url_for('static', filename='images/bnp.jpg') }}" alt="Logo">
+                <span>BNP Paribas The Bank for a Changing World</span>
+            </div>
+            <div class="btn-group">
+                {% if not logged_in %}
+                <button id="registerBtn" onclick="showForm('register')">Register</button>
+                <button id="loginBtn" onclick="showForm('login')">Login</button>
+                {% endif %}
+                {% if logged_in %}
+                <button onclick="toggleProfile()">Profile</button>
+                <form action="/logout" method="get" style="display:inline;">
+                    <button type="submit">Logout</button>
+                </form>
+                {% endif %}
+            </div>
+        </header>
+
+        <!-- Profile Sidebar -->
+        <div id="profileSidebar" style="display:none; position:fixed; top:60px; right:0; background:#ecf9ec; width:250px; height:200px; padding:20px; border-left:2px solid #2ecc71; box-shadow:-2px 2px 10px rgba(0,0,0,0.1); z-index:1000;">
+            <h3>User Profile</h3>
+            <p><strong>Account:</strong> {{ account_name }}</p>
+            <p><strong>Application:</strong> {{ application_name }}</p>
+            <p><strong>ServiceNow:</strong> {{ service_now_name }}</p>
+            <button onclick="toggleProfile()" style="margin-top: 10px; background-color: #2ecc71; border:none; color:white; padding:8px 16px; border-radius:6px;">Close</button>
+        </div>
+
+        <div class="container">
+            <!-- Sidebar -->
+            <div class="sidebar">
+                <button {% if not logged_in %}disabled{% endif %}>Create</button>
+                <button {% if not logged_in %}disabled{% endif %}>Preview</button>
+                <button onclick="window.location.href='/view_saved_table'" {% if not logged_in %}disabled{% endif %}>View</button>
+
+                
+            </div>
+
+            <!-- Main Content -->
+            <div class="main">
+                <!-- Register/Login Forms -->
+                <div id="register" class="form-box" style="display:none;">
+                    <h2>Register</h2>
+                    <form action="/register" method="post">
+                        <label>Account Name</label>
+                        <input type="text" name="account_name" required>
+                        <label>Application Name</label>
+                        <input type="text" name="application_name" required>
+                        <label>Service Now Name</label>
+                        <input type="text" name="service_now_name" required>
+                        <button type="submit">Register</button>
+                    </form>
+                    <div class="toggle-link">
+                        <a href="javascript:void(0)" onclick="showForm('login')">Already a user? Login here</a>
+                    </div>
+                </div>
+
+                <div id="login" class="form-box" style="display:none;">
+                    <h2>Login</h2>
+                    <form action="/login" method="post">
+                        <label>Account Name</label>
+                        <input type="text" name="account_name" required>
+                        <button type="submit">Login</button>
+                    </form>
+                    <div class="toggle-link">
+                        <a href="javascript:void(0)" onclick="showForm('register')">New user? Register here</a>
+                    </div>
+                </div>
+
+                {% if logged_in %}
+            
+
+                <div id="createContainer" style="margin-top: 20px; display: none;">
+    <h3>Define New Checks</h3>
+    <table id="checkTable">
+        <thead>
+            <tr>
+                <th>Check ID</th>
+                <th>Check Name</th>
+                <th>How to Perform</th>
+                <th>Expected Output</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td><input type="text" name="check_id" required></td>
+                <td><input type="text" name="check_name" required></td>
+                <td><input type="text" name="how_to_perform" required></td>
+                <td><input type="text" name="expected_output" required></td>
+            </tr>
+        </tbody>
+    </table>
+    <button type="button" onclick="addRow()">Add Row</button>
+    <button type="button" onclick="submitCheckDefinitions()">Submit</button>
+</div>
+
+
+                <div id="viewContainer" style="margin-top: 20px; display:none;">
+    <h3>Preview Defined Checks</h3>
+    <table id="previewTable">
+        <thead>
+            <tr>
+                <th>Check ID</th>
+                <th>Check Name</th>
+                <th>How to Perform</th>
+                <th>Expected Output</th>
+                <th>Evidence</th>
+                <th>Pass/Fail</th>
+                <th>Additional Notes</th>
+            </tr>
+        </thead>
+        <tbody></tbody>
+    </table>
+    <form id="saveForm" method="POST">
+        <button type="button" onclick="saveVerifiedTable()">Save Table</button>
+    </form>
+</div>
+
+                {% endif %}
+            </div>
+
+            <!-- Screenshot Gallery Sidebar -->
+        <!-- Screenshot Gallery Sidebar -->
+    <div id="screenshotSidebar">
+        <h4 id="dragHandle">Screenshot Gallery</h4>
+        <button id="activateScreenshotBtn" onclick="activateScreenshot()">Activate</button>
+        <div id="screenshotsList" class="scrollable"></div>
+    </div>
+
+
+
+        </div>
+
+        <script>
+            function toggleProfile() {
+                const sidebar = document.getElementById("profileSidebar");
+                sidebar.style.display = sidebar.style.display === "none" ? "block" : "none";
+            }
+
+            function showForm(id) {
+                document.getElementById('register').style.display = 'none';
+                document.getElementById('login').style.display = 'none';
+                document.getElementById(id).style.display = 'block';
+            }
+
+            window.onload = function () {
+                const isLoggedIn = {{ 'true' if logged_in else 'false' }};
+                if (!isLoggedIn) showForm('login');
+            };
+
+            document.querySelectorAll('.sidebar button')[0].addEventListener('click', function () {
+                document.getElementById('createContainer').style.display = 'block';
+                document.getElementById('viewContainer').style.display = 'none';
+                document.getElementById('screenshotSidebar').style.display = 'none';
+            });
+
+            
+
+        document.querySelectorAll('.sidebar button')[1].addEventListener('click', function () {
+        document.getElementById('createContainer').style.display = 'none';
+        document.getElementById('viewContainer').style.display = 'block';
+        document.getElementById('screenshotSidebar').style.display = 'block';
+        loadSelectedChecks();
+        loadScreenshots();  // <-- add this
+        setInterval(loadScreenshots, 10000); // refresh every 10 seconds
+
+    });
+
+    document.querySelectorAll('.sidebar button')[1].addEventListener('click', function () {
+    document.getElementById('createContainer').style.display = 'none';
+    document.getElementById('viewContainer').style.display = 'block';
+    document.getElementById('screenshotSidebar').style.display = 'none';
+    loadPreviewTable();
+});
+
+
+
+    const sidebar = document.getElementById("screenshotSidebar");
+
+    let isDragging = false;
+    let offsetX, offsetY;
+
+    sidebar.addEventListener("mousedown", function(e) {
+        isDragging = true;
+        offsetX = e.clientX - sidebar.offsetLeft;
+        offsetY = e.clientY - sidebar.offsetTop;
+        sidebar.style.cursor = "grabbing";
+    });
+
+    document.addEventListener("mouseup", function() {
+        isDragging = false;
+        sidebar.style.cursor = "move";
+    });
+
+    document.addEventListener("mousemove", function(e) {
+        if (isDragging) {
+            sidebar.style.left = (e.clientX - offsetX) + "px";
+            sidebar.style.top = (e.clientY - offsetY) + "px";
+        }
+    });
+
+
+            function addRow() {
+    const tbody = document.querySelector("#checkTable tbody");
+    const row = document.createElement("tr");
+    row.innerHTML = `
+        <td><input type="text" name="check_id" required></td>
+        <td><input type="text" name="check_name" required></td>
+        <td><input type="text" name="how_to_perform" required></td>
+        <td><input type="text" name="expected_output" required></td>
+    `;
+    tbody.appendChild(row);
+}
+
+function submitCheckDefinitions() {
+    const rows = document.querySelectorAll("#checkTable tbody tr");
+    const checks = [];
+
+    rows.forEach(row => {
+        const check_id = row.querySelector("input[name='check_id']").value;
+        const check_name = row.querySelector("input[name='check_name']").value;
+        const how_to_perform = row.querySelector("input[name='how_to_perform']").value;
+        const expected_output = row.querySelector("input[name='expected_output']").value;
+
+        if (check_id && check_name && how_to_perform && expected_output) {
+            checks.push({ check_id, check_name, how_to_perform, expected_output });
+        }
+    });
+
+    if (checks.length === 0) {
+        alert("Please fill out at least one complete row.");
+        return;
+    }
+
+    fetch('/save_check_definitions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ checks })
+    })
+    .then(res => res.text())
+    .then(msg => {
+        alert(msg);
+        document.querySelector("#checkTable tbody").innerHTML = '';
+        addRow(); // reset with one empty row
+    })
+    .catch(err => alert("Error saving data: " + err));
+}
+
+            function loadPreviewTable() {
+    fetch('/get_user_check_definitions')
+        .then(response => response.json())
+        .then(data => {
+            const tbody = document.querySelector("#previewTable tbody");
+            tbody.innerHTML = "";
+
+            data.forEach((check, index) => {
+                tbody.innerHTML += `
+                    <tr>
+                        <td>${check.check_id}</td>
+                        <td>${check.check_name}</td>
+                        <td>${check.how_to_perform}</td>
+                        <td>${check.expected_output}</td>
+                        <td 
+                            class="evidence-cell" 
+                            ondragover="event.preventDefault();" 
+                            ondrop="handleEvidenceDrop(event, ${index})"
+                        >
+                            <div class="drop-area">Drop Image Here</div>
+                            <img id="evidencePreview${index}" style="display:none; width: 200px; border-radius: 8px; margin-top: 5px;" />
+                        </td>
+                        <td>
+                            <label><input type="radio" name="pass_fail_${index}" value="Pass"> Pass</label>
+                            <label><input type="radio" name="pass_fail_${index}" value="Fail"> Fail</label>
+                        </td>
+                        <td contenteditable="true"></td>
+                    </tr>
+                `;
+            });
+        });
+}
+function handleEvidenceDrop(event, index) {
+    event.preventDefault();
+
+    const files = event.dataTransfer.files;
+    if (files.length === 0) return;
+
+    const file = files[0];
+    if (!file.type.startsWith("image/")) {
+        alert("Only image files allowed");
+        return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = function (e) {
+        const img = document.getElementById(`evidencePreview${index}`);
+        img.src = e.target.result;
+        img.style.display = "block";
+
+        const dropArea = img.previousElementSibling;
+        if (dropArea && dropArea.classList.contains("drop-area")) {
+            dropArea.style.display = "none";
+        }
+    };
+    reader.readAsDataURL(file);
+}
+
+
+function saveVerifiedTable() {
+    const table = document.querySelector("#previewTable");
+    const rows = Array.from(table.querySelectorAll("tbody tr")).map((row, i) => {
+        const cells = row.querySelectorAll("td");
+        const passFail = row.querySelector(`input[name='pass_fail_${i}']:checked`);
+        const img = cells[4].querySelector("img");
+
+        return {
+            check_id: cells[0].innerText.trim(),
+            check_name: cells[1].innerText.trim(),
+            how_to_perform: cells[2].innerText.trim(),
+            expected_output: cells[3].innerText.trim(),
+            evidence: img && img.src ? img.src : "",
+            pass_fail: passFail ? passFail.value : "",
+            notes: cells[6].innerText.trim()
+        };
+    });
+
+    fetch("/save_verified_table", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ rows })
+    })
+    .then(res => res.text())
+    .then(msg => alert(msg))
+    .catch(err => alert("Error saving table: " + err));
+}
+
+
+
+            
+            
+            
+
+
+            function activateScreenshot() {
+        fetch("/activate_screenshot", {
+            method: "POST"
+        })
+        .then(response => response.json())
+        .then(data => {
+            alert(data.message);
+            if (data.status === "success") {
+                document.getElementById("screenshotSidebar").style.display = "block";
+                loadScreenshots();  // Load screenshots immediately upon activation
+                setInterval(loadScreenshots, 10000); // Refresh every 10 seconds
+            }
+        })
+        .catch(err => console.error("Error:", err));
+    }
+
+    function loadScreenshots() {
+        fetch("/get_screenshots")
+        .then(response => response.json())
+        .then(files => {
+            const container = document.getElementById("screenshotsList");
+            container.innerHTML = "";
+            if (files.length === 0) {
+                container.innerHTML = "<p>No screenshots available.</p>";
+            } else {
+                files.forEach(file => {
+                    const img = document.createElement("img");
+                    img.src = `/static/screenshots/${file}`;
+                    img.classList.add("screenshot-img");
+                    img.draggable = true;
+                    img.addEventListener("dragstart", (e) => {
+                        e.dataTransfer.setData("text/plain", img.src);
+                    });
+                    container.appendChild(img);
+                });
+            }
+        })
+        .catch(err => console.error("Error loading screenshots:", err));
+    }
+        
+        </script>
+    </body>
+    </html>
+
+
+***********************************************************************************************************************
+
+from flask import Flask, render_template, request, redirect, url_for, jsonify, session
+import os
+import xml.etree.ElementTree as ET
+from datetime import datetime
+import subprocess
+
+
+app = Flask(__name__)
+app.secret_key = "user_session_id"   # Needed for session
+
+XML_FILE = 'data/data.xml'
+SELECTED_CHECKS_FILE = 'data/selected_checks.xml'
+CHECK_DEFINITIONS_FILE = 'data/check_definitions.xml'
+
+# Ensure XML file and structure exist
+def initialize_xml():
+    if not os.path.exists(XML_FILE):
+        os.makedirs(os.path.dirname(XML_FILE), exist_ok=True)
+        root = ET.Element("root")
+        tree = ET.ElementTree(root)
+        tree.write(XML_FILE)
+
+def initialize_selected_checks_xml():
+    if not os.path.exists(SELECTED_CHECKS_FILE):
+        os.makedirs(os.path.dirname(SELECTED_CHECKS_FILE), exist_ok=True)
+        root = ET.Element("selected_checks")
+        tree = ET.ElementTree(root)
+        tree.write(SELECTED_CHECKS_FILE)
+
+def get_account_details(account_name):
+    initialize_xml()
+    try:
+        tree = ET.parse(XML_FILE)
+        root = tree.getroot()
+    except ET.ParseError:
+        return None, None, None
+
+    for entry in root.findall("entry"):
+        if entry.find("account_name").text == account_name:
+            application_name = entry.find("application_name").text
+            service_now_name = entry.find("service_now_name").text
+            timestamp = entry.find("timestamp").text
+            return application_name, service_now_name, timestamp
+    return None, None, None
+
+def get_check_definitions():
+    tree = ET.parse(CHECK_DEFINITIONS_FILE)
+    root = tree.getroot()
+    checks = {}
+    for check in root.findall('check'):
+        name = check.find('name').text
+        how = check.find('how_to_perform').text
+        outcome = check.find('expected_outcome').text
+        checks[name] = {
+            'how_to_perform': how,
+            'expected_outcome': outcome
+        }
+    return checks
+
+
+@app.route("/", methods=["GET"])
+def index():
+    if 'account_name' in session:
+        account_name = session['account_name']
+        application_name, service_now_name, timestamp = get_account_details(account_name)
+        return render_template("index.html", logged_in=True, account_name=account_name, application_name=application_name, service_now_name=service_now_name)
+    else:
+        return render_template("index.html", logged_in=False)
+
+@app.route("/register", methods=["POST"])
+def register():
+    account_name = request.form.get("account_name")
+    application_name = request.form.get("application_name")
+    service_now_name = request.form.get("service_now_name")
+
+    initialize_xml()
+    tree = ET.parse(XML_FILE)
+    root = tree.getroot()
+
+    for entry in root.findall("entry"):
+        if entry.find("account_name").text == account_name:
+            return '''
+                <script>
+                    alert("Account already exists!");
+                    window.location.href = "/";
+                </script>
+            '''
+
+    new_entry = ET.SubElement(root, "entry")
+    ET.SubElement(new_entry, "account_name").text = account_name
+    ET.SubElement(new_entry, "application_name").text = application_name
+    ET.SubElement(new_entry, "service_now_name").text = service_now_name
+    ET.SubElement(new_entry, "timestamp").text = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
+    tree.write(XML_FILE)
+    return '''
+        <script>
+            alert("Registration Successful!");
+            window.location.href = "/";
+        </script>
+    '''
+
+@app.route("/login", methods=["POST"])
+def login():
+    account_name = request.form.get("account_name")
+    application_name, service_now_name, timestamp = get_account_details(account_name)
+
+    if application_name:
+        session['account_name'] = account_name
+        return redirect(url_for("index"))
+    else:
+        return '''
+            <script>
+                alert("Invalid account name!");
+                window.location.href = "/";
+            </script>
+        '''
+
+@app.route("/logout")
+def logout():
+    session.clear()
+    return redirect(url_for("index"))
+
+@app.route("/get_user_check_definitions", methods=["GET"])
+def get_user_check_definitions():
+    if 'account_name' not in session:
+        return jsonify([])
+
+    account_name = session['account_name']
+    filepath = f"data/xml_definitions_{account_name}.xml"
+
+    if not os.path.exists(filepath):
+        return jsonify([])
+
+    try:
+        tree = ET.parse(filepath)
+        root = tree.getroot()
+    except ET.ParseError:
+        return jsonify([])
+
+    checks = []
+    for check in root.findall("Check"):
+        checks.append({
+            "check_id": check.findtext("CheckID", ""),
+            "check_name": check.findtext("CheckName", ""),
+            "how_to_perform": check.findtext("HowToPerform", ""),
+            "expected_output": check.findtext("ExpectedOutput", "")
+        })
+
+    return jsonify(checks)
+
+
+
+@app.route("/save_check_definitions", methods=["POST"])
+def save_check_definitions():
+    if 'account_name' not in session:
+        return "Unauthorized", 401
+
+    account_name = session['account_name']
+    data = request.get_json()
+    checks = data.get("checks")
+
+    if not checks or not isinstance(checks, list):
+        return "Invalid data", 400
+
+    filepath = f"data/xml_definitions_{account_name}.xml"
+    os.makedirs(os.path.dirname(filepath), exist_ok=True)
+
+    # Handle corrupted or empty XML files
+    root = None
+    if os.path.exists(filepath):
+        try:
+            tree = ET.parse(filepath)
+            root = tree.getroot()
+        except ET.ParseError:
+            root = ET.Element("CheckDefinitions")
+            tree = ET.ElementTree(root)
+    else:
+        root = ET.Element("CheckDefinitions")
+        tree = ET.ElementTree(root)
+
+    for check in checks:
+        check_id = check.get("check_id")
+        check_name = check.get("check_name")
+        how_to_perform = check.get("how_to_perform")
+        expected_output = check.get("expected_output")
+
+        if not all([check_id, check_name, how_to_perform, expected_output]):
+            continue  # skip incomplete rows
+
+        check_elem = ET.SubElement(root, "Check")
+        ET.SubElement(check_elem, "CheckID").text = check_id
+        ET.SubElement(check_elem, "CheckName").text = check_name
+        ET.SubElement(check_elem, "HowToPerform").text = how_to_perform
+        ET.SubElement(check_elem, "ExpectedOutput").text = expected_output
+
+    tree.write(filepath, encoding="utf-8", xml_declaration=True)
+    return "Check definitions saved successfully"
+
+
+
+@app.route("/save_verified_table", methods=["POST"])
+def save_verified_table():
+    if 'account_name' not in session:
+        return "Unauthorized", 401
+
+    account_name = session['account_name']
+    data = request.get_json()
+    rows = data.get("rows", [])
+
+    if not rows:
+        return "No data to save", 400
+
+    root = ET.Element("CheckVerifiedTable")
+    ET.SubElement(root, "AccountName").text = account_name
+
+    for row in rows:
+        row_elem = ET.SubElement(root, "Row")
+        ET.SubElement(row_elem, "CheckID").text = row.get("check_id", "")
+        ET.SubElement(row_elem, "CheckName").text = row.get("check_name", "")
+        ET.SubElement(row_elem, "HowToPerform").text = row.get("how_to_perform", "")
+        ET.SubElement(row_elem, "ExpectedOutput").text = row.get("expected_output", "")
+        ET.SubElement(row_elem, "Evidence").text = row.get("evidence", "")
+        ET.SubElement(row_elem, "PassFail").text = row.get("pass_fail", "")
+        ET.SubElement(row_elem, "Notes").text = row.get("notes", "")
+
+    os.makedirs("saved_tables", exist_ok=True)
+    filepath = f"saved_tables/check_verified_table_{account_name}.xml"
+    ET.ElementTree(root).write(filepath, encoding="utf-8", xml_declaration=True)
+
+    return "Verification table saved successfully!"
+
+
+@app.route("/activate_screenshot", methods=["POST"])
+def activate_screenshot():
+    try:
+        subprocess.Popen(['python', 'local_screenshot.py'])
+        return jsonify({'status': 'success', 'message': 'Screenshot capturing activated.'})
+    except Exception as e:
+        return jsonify({'status': 'error', 'message': str(e)}), 500
+
+
+@app.route("/get_screenshots", methods=["GET"])
+def get_screenshots():
+    screenshots_dir = os.path.join("static", "screenshots")
+    if not os.path.exists(screenshots_dir):
+        return jsonify([])
+
+    files = os.listdir(screenshots_dir)
+    return jsonify(files)
+
+@app.route('/view_saved_table')
+def view_saved_table():
+    if 'account_name' not in session:
+        return redirect(url_for('index'))
+
+    account_name = session['account_name']
+    file_path = os.path.join("saved_tables", f"check_verified_table_{account_name}.xml")
+
+    if not os.path.exists(file_path):
+        return f"<h3>No saved data found for {account_name}</h3>"
+
+    tree = ET.parse(file_path)
+    root = tree.getroot()
+
+    rows = []
+    for row_elem in root.findall("Row"):
+        row_data = []
+        for col in row_elem:
+            row_data.append(col.text or "")
+        rows.append(row_data)
+
+    return render_template("view_saved_table.html", account_name=account_name, rows=rows)
+
+
+    
+if __name__ == "__main__":
+    app.run(debug=True)
+*******************************************************************************************************************
