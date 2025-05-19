@@ -1,0 +1,61 @@
+import xml.etree.ElementTree as ET
+from docx import Document
+from docx.shared import Inches
+import requests
+from io import BytesIO
+import os
+
+def get_unique_file(base_name, extension=".docx"):
+    count = 1
+    filename = f"{base_name}{extension}"
+    while os.path.exists(filename):
+        filename = f"{base_name}{count}{extension}"
+        count += 1
+    return filename
+
+tree = ET.parse('saved_tables/check_verified_table_siva.xml')
+root = tree.getroot()
+doc = Document()
+
+session = root.find("SessionDetails")
+account_name = session.find("AccountName").text if session is not None else "Unknown"
+
+doc.add_heading("Verification Report", level=1)
+doc.add_paragraph(f"Account Name: {account_name}")
+
+rows = root.findall("Row")
+if not rows:
+    print("no rows in xml")
+else:
+    num_cols = len(rows[0])
+    headers = [col.text if col is not None else f"Column{i+1}" for i, col in enumerate(rows[0])]
+    
+    table = doc.add_table(rows=1, cols=num_cols)
+    table.style = 'Table Grid'
+    header_cells = table.rows[0].cells
+
+    for i, header in enumerate(headers):
+        header_cells[i].text = header
+
+    for row in rows[1:]:
+        cols = [col.text if col is not None else "" for col in row]
+        row_cells = table.add_row().cells
+
+        for i, text in enumerate(cols):
+            if text.startswith("http"):
+                try:
+                    response = requests.get(text)
+                    if response.status_code == 200:
+                        image_stream = BytesIO(response.content)
+                        run = row_cells[i].paragraphs[0].add_run()
+                        run.add_picture(image_stream, width=Inches(1.0))
+                    else:
+                        row_cells[i].text = "Image load failed"
+                except Exception as e:
+                    row_cells[i].text = f"Error: {e}"
+            else:
+                row_cells[i].text = text
+
+filename = get_unique_file("checks")
+doc.save(filename)
+print(f"Word file generated: {filename}")
