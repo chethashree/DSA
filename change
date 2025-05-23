@@ -1,0 +1,194 @@
+from flask import Flask, render_template, request, redirect, url_for, jsonify, session
+import os
+import xml.etree.ElementTree as ET
+from datetime import datetime
+import subprocess
+import json
+
+app = Flask(__name__)
+app.secret_key = "user_session_id"
+
+XML_FILE = 'data/data.xml'
+
+# Ensure XML file exists
+def initialize_xml():
+    if not os.path.exists(XML_FILE):
+        os.makedirs(os.path.dirname(XML_FILE), exist_ok=True)
+        root = ET.Element("root")
+        tree = ET.ElementTree(root)
+        tree.write(XML_FILE)
+
+def get_application_folder(application_name):
+    folder_path = os.path.join("data", application_name)
+    os.makedirs(folder_path, exist_ok=True)
+    return folder_path
+
+@app.route('/submit_checks', methods=['POST'])
+def submit_checks():
+    account_name = session.get('account_name')
+    if not account_name:
+        return jsonify({'success': False, 'message': 'User not logged in'}), 400
+
+    application_name, _, _ = get_account_details(account_name)
+    folder = get_application_folder(application_name)
+    filepath = os.path.join(folder, 'selected_checks.xml')
+
+    if not os.path.exists(filepath):
+        root = ET.Element("application", attrib={"name": application_name})
+        tree = ET.ElementTree(root)
+        tree.write(filepath)
+
+    tree = ET.parse(filepath)
+    root = tree.getroot()
+
+    existing_check_names = {check.find('name').text for check in root.findall('check')}
+    checks_data = request.json.get('checks', [])
+
+    for check in checks_data:
+        if check.get('name') in existing_check_names:
+            continue
+        check_elem = ET.SubElement(root, 'check')
+        ET.SubElement(check_elem, 'name').text = check.get('name', '')
+        ET.SubElement(check_elem, 'how_to_perform').text = check.get('how_to_perform', '')
+        ET.SubElement(check_elem, 'expected_outcome').text = check.get('expected_outcome', '')
+
+    tree.write(filepath, encoding='utf-8', xml_declaration=True)
+    return jsonify({'success': True, 'message': 'Checks updated successfully'})
+
+@app.route('/get_selected_checks', methods=['GET'])
+def get_selected_checks():
+    account_name = session.get('account_name')
+    if not account_name:
+        return jsonify([])
+
+    application_name, _, _ = get_account_details(account_name)
+    filepath = os.path.join(get_application_folder(application_name), 'selected_checks.xml')
+
+    if not os.path.exists(filepath):
+        return jsonify([])
+
+    tree = ET.parse(filepath)
+    root = tree.getroot()
+    selected = []
+
+    for check in root.findall('check'):
+        selected.append({
+            'name': check.find('name').text or '',
+            'how_to_perform': check.find('how_to_perform').text or '',
+            'expected_outcome': check.find('expected_outcome').text or ''
+        })
+    return jsonify(selected)
+
+@app.route('/save_table', methods=['POST'])
+def save_table():
+    table_data_json = request.form.get('table_data')
+    if not table_data_json:
+        return "No data received", 400
+
+    table_data = json.loads(table_data_json)
+    account_name = session.get('account_name')
+    application_name, _, _ = get_account_details(account_name)
+
+    folder = get_application_folder(application_name)
+    filepath = os.path.join(folder, 'check_verified_table.xml')
+
+    root = ET.Element("CheckVerifiedTable")
+    session_elem = ET.SubElement(root, "SessionDetails")
+    ET.SubElement(session_elem, "AccountName").text = account_name
+
+    for row in table_data:
+        row_elem = ET.SubElement(root, "Row")
+        for i, cell in enumerate(row):
+            ET.SubElement(row_elem, f"Col{i+1}").text = cell
+
+    tree = ET.ElementTree(root)
+    tree.write(filepath, encoding="utf-8", xml_declaration=True)
+    return "Data saved successfully"
+
+@app.route('/view_saved_table')
+def view_saved_table():
+    if 'account_name' not in session:
+        return redirect(url_for('index'))
+
+    account_name = session['account_name']
+    application_name, _, _ = get_account_details(account_name)
+    filepath = os.path.join(get_application_folder(application_name), 'check_verified_table.xml')
+
+    if not os.path.exists(filepath):
+        return f"<h3>No saved data found for application {application_name}</h3>"
+
+    tree = ET.parse(filepath)
+    root = tree.getroot()
+
+    rows = []
+    for row_elem in root.findall("Row"):
+        row_data = [col.text or "" for col in row_elem]
+        rows.append(row_data)
+
+    return render_template("view_saved_table.html", account_name=account_name, rows=rows)
+
+def get_account_details(account_name):
+    initialize_xml()
+    try:
+        tree = ET.parse(XML_FILE)
+        root = tree.getroot()
+    except ET.ParseError:
+        return None, None, None
+
+    for entry in root.findall("entry"):
+        if entry.find("account_name").text == account_name:
+            return (
+                entry.find("application_name").text,
+                entry.find("service_now_name").text,
+                entry.find("timestamp").text,
+            )
+    return None, None, None
+
+@app.route("/", methods=["GET"])
+def index():
+    if 'account_name' in session:
+        account_name = session['account_name']
+        application_name, service_now_name, _ = get_account_details(account_name)
+        return render_template("index.html", logged_in=True, account_name=account_name, application_name=application_name, service_now_name=service_now_name)
+    return render_template("index.html", logged_in=False)
+
+@app.route("/register", methods=["POST"])
+def register():
+    account_name = request.form.get("account_name")
+    application_name = request.form.get("application_name")
+    service_now_name = request.form.get("service_now_name")
+
+    initialize_xml()
+    tree = ET.parse(XML_FILE)
+    root = tree.getroot()
+
+    for entry in root.findall("entry"):
+        if entry.find("account_name").text == account_name:
+            return '''<script>alert("Account already exists!"); window.location.href = "/";</script>'''
+
+    new_entry = ET.SubElement(root, "entry")
+    ET.SubElement(new_entry, "account_name").text = account_name
+    ET.SubElement(new_entry, "application_name").text = application_name
+    ET.SubElement(new_entry, "service_now_name").text = service_now_name
+    ET.SubElement(new_entry, "timestamp").text = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
+    tree.write(XML_FILE)
+    return '''<script>alert("Registration Successful!"); window.location.href = "/";</script>'''
+
+@app.route("/login", methods=["POST"])
+def login():
+    account_name = request.form.get("account_name")
+    application_name, _, _ = get_account_details(account_name)
+    if application_name:
+        session['account_name'] = account_name
+        return redirect(url_for("index"))
+    return '''<script>alert("Invalid account name!"); window.location.href = "/";</script>'''
+
+@app.route("/logout")
+def logout():
+    session.clear()
+    return redirect(url_for("index"))
+
+if __name__ == "__main__":
+    app.run(debug=True)
+
