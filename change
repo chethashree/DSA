@@ -90,11 +90,17 @@ def save_table():
     application_name, _, _ = get_account_details(account_name)
 
     folder = get_application_folder(application_name)
-    filepath = os.path.join(folder, 'check_verified_table.xml')
+    date_folder = datetime.now().strftime("%Y-%m-%d")
+    dated_folder = os.path.join(folder, date_folder)
+    os.makedirs(dated_folder, exist_ok=True)
+
+    timestamp = datetime.now().strftime("%H%M%S")
+    filepath = os.path.join(dated_folder, f'check_verified_table_{timestamp}.xml')
 
     root = ET.Element("CheckVerifiedTable")
     session_elem = ET.SubElement(root, "SessionDetails")
     ET.SubElement(session_elem, "AccountName").text = account_name
+    ET.SubElement(session_elem, "Timestamp").text = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
     for row in table_data:
         row_elem = ET.SubElement(root, "Row")
@@ -112,12 +118,24 @@ def view_saved_table():
 
     account_name = session['account_name']
     application_name, _, _ = get_account_details(account_name)
-    filepath = os.path.join(get_application_folder(application_name), 'check_verified_table.xml')
+    folder = get_application_folder(application_name)
 
-    if not os.path.exists(filepath):
+    latest_file = None
+    latest_time = None
+
+    for root_dir, _, files in os.walk(folder):
+        for f in files:
+            if f.startswith("check_verified_table") and f.endswith(".xml"):
+                path = os.path.join(root_dir, f)
+                file_time = os.path.getmtime(path)
+                if latest_time is None or file_time > latest_time:
+                    latest_time = file_time
+                    latest_file = path
+
+    if not latest_file:
         return f"<h3>No saved data found for application {application_name}</h3>"
 
-    tree = ET.parse(filepath)
+    tree = ET.parse(latest_file)
     root = tree.getroot()
 
     rows = []
@@ -191,4 +209,3 @@ def logout():
 
 if __name__ == "__main__":
     app.run(debug=True)
-
