@@ -1,21 +1,24 @@
-
 @app.route("/exportdoc", methods=["POST"])
 def exportdoc():
     try:
+        from datetime import datetime
+        import pythoncom
+        pythoncom.CoInitialize()
+
         account_name = session.get('account_name')
         if not account_name:
             return jsonify({'status': 'error', 'message': 'User session not found'}), 401
 
         print(f"Export triggered by account: {account_name}")
 
-        # Get application name
+        # Get application details
         application_name, _, _ = get_account_details(account_name)
         if not application_name:
             return jsonify({'status': 'error', 'message': 'Application not found for user'}), 400
 
         folder = get_application_folder(application_name)
 
-        # Find the latest XML file
+        # Find the latest XML file in the folder
         latest_file = None
         latest_time = None
         for root_dir, _, files in os.walk(folder):
@@ -30,7 +33,7 @@ def exportdoc():
         if not latest_file:
             return jsonify({'status': 'error', 'message': 'No XML file found for export'}), 404
 
-        # Parse XML
+        # Parse the XML
         tree = ET.parse(latest_file)
         root = tree.getroot()
 
@@ -48,9 +51,11 @@ def exportdoc():
                 element = row.find(col_tag)
                 value = element.text if element is not None else ''
 
-                # If image path (Col5) - embed if file exists
-                if i == 5:
-                    image_path = os.path.join(folder, value)
+                if i == 5:  # Col5 is image name or path
+                    screenshots_dir = os.path.join("static", "screenshots")
+                    image_name = os.path.basename(value)
+                    image_path = os.path.join(screenshots_dir, image_name)
+
                     print(f"Looking for image at: {image_path}")
                     if os.path.exists(image_path):
                         with open(image_path, 'rb') as img_file:
@@ -62,12 +67,15 @@ def exportdoc():
             html_table += "</tr>"
         html_table += "</tbody></table>"
 
-        # Send via Outlook
-        outlook = win32.Dispatch('Outlook.Application')
-        mail = outlook.CreateItem(0)
-        mail.Subject = f'CheckVerifiedTable Report for {account_name}'
-        mail.HTMLBody = f"<h3>CheckVerifiedTable Report for {account_name} / {application_name}</h3>{html_table}"
-        mail.Display()  # Use mail.Send() to send directly
+        # Send Outlook email
+        try:
+            outlook = win32.Dispatch('Outlook.Application')
+            mail = outlook.CreateItem(0)
+            mail.Subject = f'CheckVerifiedTable Report for {account_name}'
+            mail.HTMLBody = f"<h3>CheckVerifiedTable Report for {account_name} / {application_name}</h3>{html_table}"
+            mail.Display()
+        finally:
+            pythoncom.CoUninitialize()
 
         return jsonify({'status': 'success', 'message': f'Document exported and email triggered for {account_name}.'})
 
