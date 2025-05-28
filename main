@@ -1,0 +1,220 @@
+from flask import Flask, render_template, request, jsonify, send_from_directory
+import os
+import xml.etree.ElementTree as ET
+from datetime import datetime
+
+app = Flask(__name__)
+
+# Utility: Get path to application's folder
+def get_application_folder(application_name):
+    folder_path = os.path.join("data", application_name)
+    os.makedirs(folder_path, exist_ok=True)
+    return folder_path
+
+@app.route("/")
+def main_dashboard():
+    return render_template("main.html")
+
+@app.route("/search_tables")
+def search_tables():
+    application_name = request.args.get('application_name')
+    date = request.args.get('date')  # format: YYYY-MM-DD
+
+    if not application_name or not date:
+        return jsonify({'files': []})
+
+    folder = get_application_folder(application_name)
+    matched_files = []
+
+    # Format to YYYYMMDD to match filenames
+    date_token = date.replace("-", "")
+
+    for file in os.listdir(folder):
+        if file.startswith("check_verified_table") and file.endswith(".xml") and date_token in file:
+            matched_files.append(file)
+
+    return jsonify({'files': matched_files})
+
+@app.route("/view_table_content")
+def view_table_content():
+    application_name = request.args.get('application_name')
+    filename = request.args.get('filename')
+
+    if not application_name or not filename:
+        return "<p>Missing application or file name.</p>"
+
+    folder = get_application_folder(application_name)
+    file_path = os.path.join(folder, filename)
+
+    if not os.path.exists(file_path):
+        return "<p>File not found.</p>"
+
+    try:
+        tree = ET.parse(file_path)
+        root = tree.getroot()
+    except ET.ParseError:
+        return "<p>Invalid XML file.</p>"
+
+    rows = []
+    for row_elem in root.findall("Row"):
+        row_data = [col.text or "" for col in row_elem]
+        rows.append(row_data)
+
+    html = "<table border='1' cellpadding='8' style='margin-top:10px; border-collapse:collapse;'>"
+    for row in rows:
+        html += "<tr>" + "".join(f"<td>{cell}</td>" for cell in row) + "</tr>"
+    html += "</table>"
+
+    return html
+
+if __name__ == "__main__":
+    app.run(debug=True)
+
+
+***************************************************************************************************************
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Main Dashboard</title>
+
+    <style>
+        body {
+            margin: 0;
+            font-family: 'Segoe UI', sans-serif;
+            background: #f4f9f4;
+        }
+
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 20px;
+            background-color: #2ecc71;
+            color: white;
+            flex-wrap: wrap;
+        }
+
+        header img {
+            height: 30px;
+            margin-right: 10px;
+        }
+
+        header span {
+            font-size: 1.4em;
+        }
+
+        .form-section {
+            margin: 40px auto;
+            max-width: 500px;
+            padding: 30px;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+
+        .form-section label {
+            display: block;
+            margin-bottom: 6px;
+            font-weight: 600;
+            color: #2c3e50;
+        }
+
+        .form-section input[type="text"],
+        .form-section input[type="date"] {
+            width: 100%;
+            padding: 12px;
+            margin-bottom: 16px;
+            border: 1px solid #ccc;
+            border-radius: 6px;
+            font-size: 1em;
+        }
+
+        .form-section button {
+            width: 100%;
+            padding: 12px;
+            background-color: #2ecc71;
+            color: white;
+            font-size: 1em;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: background-color 0.3s ease;
+        }
+
+        .form-section button:hover {
+            background-color: #27ae60;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div style="display: flex; align-items: center;">
+            <img src="{{ url_for('static', filename='images/bnp.jpg') }}" alt="Logo">
+            <span>BNP Paribas The Bank for a Changing World</span>
+        </div>
+    </header>
+
+    <div class="form-section">
+        <form action="/search_dashboard" method="GET">
+            <label for="appName">Application Name</label>
+            <input type="text" id="appName" name="application_name" placeholder="Enter application name" required>
+
+           <label for="searchDate">Select Date</label>
+<input type="date" id="searchDate" name="date" required>
+
+
+            <button type="submit">Search</button>
+
+
+            <!-- Add below your existing form in .form-section -->
+<div id="resultsContainer" style="margin-top: 20px;"></div>
+
+<script>
+    document.querySelector('form').addEventListener('submit', function (e) {
+        e.preventDefault();
+
+        const appName = document.getElementById('appName').value;
+        const date = document.getElementById('searchDate').value;
+
+        fetch(`/search_tables?application_name=${appName}&date=${date}`)
+            .then(res => res.json())
+            .then(data => {
+                const container = document.getElementById("resultsContainer");
+                container.innerHTML = "";
+
+                if (data.files.length === 0) {
+                    container.innerHTML = "<p>No tables found for the selected date.</p>";
+                    return;
+                }
+
+                data.files.forEach(file => {
+                    const div = document.createElement("div");
+                    div.style.marginBottom = "10px";
+                    div.innerHTML = `
+                        <strong>${file}</strong>
+                        <button onclick="viewTable('${file}', '${appName}')"
+                            style="margin-left: 10px; padding: 6px 10px; background-color: #2ecc71; color: white; border: none; border-radius: 6px;">View</button>
+                        <div id="table-${file}" style="margin-top: 10px;"></div>
+                    `;
+                    container.appendChild(div);
+                });
+            });
+    });
+
+    function viewTable(filename, appName) {
+        fetch(`/view_table_content?application_name=${appName}&filename=${filename}`)
+            .then(res => res.text())
+            .then(html => {
+                document.getElementById(`table-${filename}`).innerHTML = html;
+            });
+    }
+</script>
+
+        </form>
+    </div>
+</body>
+</html>
