@@ -1,0 +1,551 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>SOW Dashboard</title>
+  <style>
+    body {
+      background-color: #f4fdf7;
+      font-family: 'Segoe UI', sans-serif;
+      margin: 40px;
+      color: #333;
+    }
+
+    .container {
+      background: white;
+      border-radius: 12px;
+      padding: 25px;
+      box-shadow: 0 4px 12px rgba(0, 128, 0, 0.15);
+      margin-bottom: 40px;
+    }
+
+    h2 {
+      color: #2e7d32;
+      margin-bottom: 20px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    th, td {
+      padding: 14px;
+      text-align: left;
+    }
+
+    th {
+      background-color: #e8f5e9;
+      color: #1b5e20;
+      font-size: 16px;
+    }
+
+    tr {
+      transition: background-color 0.3s ease;
+    }
+
+    tr:hover {
+      background-color: #f1f8e9;
+    }
+
+    .btn-view {
+      background-color: #66bb6a;
+      border: none;
+      color: white;
+      padding: 8px 16px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-weight: bold;
+    }
+
+    .btn-view:hover {
+      background-color: #388e3c;
+    }
+
+    .status-pass {
+      color: #2e7d32;
+      font-weight: bold;
+    }
+
+    .status-fail {
+      color: #c62828;
+      font-weight: bold;
+    }
+
+    .status-error, .status-nodata {
+      color: #999;
+    }
+
+    td[colspan] {
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- SOW Dashboard -->
+  <div class="container">
+    <h2>SOW Dashboard</h2>
+    <table>
+      <thead>
+        <tr>
+          <th>Application Name</th>
+          <th>Status</th>
+          <th>Action</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for app in applications %}
+          <tr>
+            <td>{{ app.name }}</td>
+            <td class="status-{{ app.status | lower | replace(' ', '') }}">{{ app.status }}</td>
+            <td>
+              <form method="get" action="/preview/{{ app.name }}">
+                <button type="submit" class="btn-view">View</button>
+              </form>
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Table Preview -->
+  <div class="container">
+    <h2>Table Preview</h2>
+    {% if table_rows %}
+      <table>
+        <thead>
+          <tr>
+            {% for header in table_headers %}
+              <th>{{ header }}</th>
+            {% endfor %}
+          </tr>
+        </thead>
+        <tbody>
+  {% for row in table_rows %}
+    <tr>
+      {% for cell in row %}
+        <td>
+          {% if loop.index0 == 4 and cell.startswith('http') %}
+            <img src="{{ cell }}" alt="Evidence" width="150" />
+          {% else %}
+            {{ cell }}
+          {% endif %}
+        </td>
+      {% endfor %}
+    </tr>
+  {% endfor %}
+</tbody>
+      </table>
+    {% else %}
+      <p>Select “View” to preview a table.</p>
+    {% endif %}
+  </div>
+
+</body>
+</html>
+
+
+*********************************************************************************************************************
+from flask import Flask, render_template, send_file
+import os
+import xml.etree.ElementTree as ET
+from datetime import datetime
+
+app = Flask(__name__)
+DATA_DIR = "data"
+DATA_XML = os.path.join(DATA_DIR, "data.xml")
+
+def get_application_names():
+    if not os.path.exists(DATA_XML):
+        return []
+
+    tree = ET.parse(DATA_XML)
+    root = tree.getroot()
+
+    app_names = []
+    seen = set()
+
+    for entry in root.findall("entry"):
+        app_name = entry.findtext("application_name")
+        if app_name:
+            app_name = app_name.strip()
+            if app_name not in seen:
+                seen.add(app_name)
+                app_names.append(app_name)
+
+    return app_names
+
+
+def get_latest_xml_file(app_folder_path):
+    """Returns latest check_verified_table_*.xml file from the application folder."""
+    if not os.path.isdir(app_folder_path):
+        return None, None
+
+    xml_files = [
+        f for f in os.listdir(app_folder_path)
+        if f.startswith("check_verified_table") and f.endswith(".xml")
+    ]
+
+    if not xml_files:
+        return None, None
+
+    # Sort files by timestamp part in filename (e.g., check_verified_table_20250528_174239.xml)
+    xml_files.sort(reverse=True)
+    latest_xml = xml_files[0]
+    return os.path.join(app_folder_path, latest_xml), latest_xml
+
+
+def get_status_from_xml(xml_path):
+    """
+    Reads Col6 of each <Row> in XML.
+    Returns 'Pass' if all Col6 values are 'Pass' (case-insensitive),
+    else returns 'Fail'.
+    """
+    try:
+        tree = ET.parse(xml_path)
+        root = tree.getroot()
+
+        for row in root.findall("Row"):
+            col6 = row.findtext("Col6")
+            if not col6 or col6.strip().lower() != "pass":
+                return "Fail"  # Any non-pass → Fail
+
+        return "Pass"  # All rows were 'pass'
+    except Exception as e:
+        print(f"XML Parse Error: {e}")
+        return "Error"
+
+
+
+def get_applications_data():
+    applications = []
+
+    app_names = get_application_names()
+    for app_name in app_names:
+        app_path = os.path.join(DATA_DIR, app_name)
+        latest_xml_path, xml_filename = get_latest_xml_file(app_path)
+
+        if not latest_xml_path:
+            status = "No Data"
+        else:
+            status = get_status_from_xml(latest_xml_path)
+
+        applications.append({
+            "name": app_name,
+            "status": status,
+            "file": xml_filename or "",
+            "path": latest_xml_path or ""
+        })
+
+    return applications
+
+@app.route('/')
+def dashboard():
+    applications = get_applications_data()
+    return render_template("dashboard.html", applications=applications)
+
+@app.route('/preview/<app_name>')
+def preview_table(app_name):
+    applications = get_applications_data()
+
+    # Get latest file path for this application
+    app_path = os.path.join(DATA_DIR, app_name)
+    xml_path, _ = get_latest_xml_file(app_path)
+
+    table_headers = [f"Col{i}" for i in range(1, 8)]
+    table_rows = []
+
+    if xml_path and os.path.exists(xml_path):
+        tree = ET.parse(xml_path)
+        root = tree.getroot()
+
+        for row_elem in root.findall("Row"):
+            row_data = []
+            for col in table_headers:
+                val = row_elem.findtext(col)
+                row_data.append(val if val else "")
+            table_rows.append(row_data)
+
+    return render_template("dashboard.html", applications=applications, table_rows=table_rows, table_headers=table_headers)
+
+
+if __name__ == '__main__':
+    app.run(debug=True)
+
+
+**********************************************************************************************************************
+
+
+
+
+
+# app.py
+from flask import Flask, render_template
+import os
+import xml.etree.ElementTree as ET
+from datetime import datetime
+
+app = Flask(__name__)
+DATA_DIR = "data"
+DATA_XML = os.path.join(DATA_DIR, "data.xml")
+
+def get_application_names():
+    if not os.path.exists(DATA_XML):
+        return []
+
+    tree = ET.parse(DATA_XML)
+    root = tree.getroot()
+
+    app_names = []
+    seen = set()
+    for entry in root.findall("entry"):
+        app_name = entry.findtext("application_name")
+        if app_name:
+            app_name = app_name.strip()
+            if app_name not in seen:
+                seen.add(app_name)
+                app_names.append(app_name)
+    return app_names
+
+def get_latest_xml_file(app_folder_path):
+    if not os.path.isdir(app_folder_path):
+        return None, None
+
+    date_folders = [f for f in os.listdir(app_folder_path)
+                    if os.path.isdir(os.path.join(app_folder_path, f))]
+    if not date_folders:
+        return None, None
+
+    date_folders.sort(reverse=True)
+    for date_folder in date_folders:
+        folder_path = os.path.join(app_folder_path, date_folder)
+        xml_files = [f for f in os.listdir(folder_path)
+                     if f.startswith("check_verified_table") and f.endswith(".xml")]
+        if xml_files:
+            xml_files.sort(reverse=True)
+            latest_file = xml_files[0]
+            return os.path.join(folder_path, latest_file), latest_file
+
+    return None, None
+
+def get_status_from_xml(xml_path):
+    try:
+        tree = ET.parse(xml_path)
+        root = tree.getroot()
+        for row in root.findall("Row"):
+            col6 = row.findtext("Col6")
+            if not col6 or col6.strip().lower() != "pass":
+                return "Fail"
+        return "Pass"
+    except Exception as e:
+        print(f"XML Parse Error: {e}")
+        return "Error"
+
+def get_applications_data():
+    applications = []
+    app_names = get_application_names()
+    for app_name in app_names:
+        app_path = os.path.join(DATA_DIR, app_name)
+        latest_xml_path, xml_filename = get_latest_xml_file(app_path)
+
+        if not latest_xml_path:
+            status = "No Data"
+        else:
+            status = get_status_from_xml(latest_xml_path)
+
+        applications.append({
+            "name": app_name,
+            "status": status,
+            "file": xml_filename or "",
+            "path": latest_xml_path or ""
+        })
+    return applications
+
+@app.route('/')
+def dashboard():
+    applications = get_applications_data()
+    return render_template("dashboard.html", applications=applications)
+
+@app.route('/preview/<app_name>')
+def preview_table(app_name):
+    applications = get_applications_data()
+    app_path = os.path.join(DATA_DIR, app_name)
+    xml_path, _ = get_latest_xml_file(app_path)
+
+    table_headers = [f"Col{i}" for i in range(1, 8)]
+    table_rows = []
+
+    if xml_path and os.path.exists(xml_path):
+        try:
+            tree = ET.parse(xml_path)
+            root = tree.getroot()
+            for row_elem in root.findall("Row"):
+                row_data = []
+                for col in table_headers:
+                    val = row_elem.findtext(col)
+                    row_data.append(val if val else "")
+                table_rows.append(row_data)
+        except Exception as e:
+            print(f"Error parsing preview XML: {e}")
+
+    return render_template("dashboard.html", applications=applications,
+                           table_rows=table_rows, table_headers=table_headers)
+
+if __name__ == '__main__':
+    app.run(debug=True)
+
+
+**********************************************************************************************************************
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>SOW Dashboard</title>
+  <style>
+    body {
+      background-color: #f4fdf7;
+      font-family: 'Segoe UI', sans-serif;
+      margin: 40px;
+      color: #333;
+    }
+
+    .container {
+      background: white;
+      border-radius: 12px;
+      padding: 25px;
+      box-shadow: 0 4px 12px rgba(0, 128, 0, 0.15);
+      margin-bottom: 40px;
+    }
+
+    h2 {
+      color: #2e7d32;
+      margin-bottom: 20px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    th, td {
+      padding: 14px;
+      text-align: left;
+    }
+
+    th {
+      background-color: #e8f5e9;
+      color: #1b5e20;
+      font-size: 16px;
+    }
+
+    tr {
+      transition: background-color 0.3s ease;
+    }
+
+    tr:hover {
+      background-color: #f1f8e9;
+    }
+
+    .btn-view {
+      background-color: #66bb6a;
+      border: none;
+      color: white;
+      padding: 8px 16px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-weight: bold;
+    }
+
+    .btn-view:hover {
+      background-color: #388e3c;
+    }
+
+    .status-pass {
+      color: #2e7d32;
+      font-weight: bold;
+    }
+
+    .status-fail {
+      color: #c62828;
+      font-weight: bold;
+    }
+
+    .status-error, .status-nodata {
+      color: #999;
+    }
+
+    td[colspan] {
+      text-align: center;
+    }
+
+    img {
+      border-radius: 6px;
+      box-shadow: 0 0 8px rgba(0, 0, 0, 0.1);
+    }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+    <h2>SOW Dashboard</h2>
+    <table>
+      <thead>
+        <tr>
+          <th>Application Name</th>
+          <th>Status</th>
+          <th>Action</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for app in applications %}
+        <tr>
+          <td>{{ app.name }}</td>
+          <td class="status-{{ app.status | lower | replace(' ', '') }}">{{ app.status }}</td>
+          <td>
+            <form method="get" action="/preview/{{ app.name }}">
+              <button type="submit" class="btn-view">View</button>
+            </form>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <div class="container">
+    <h2>Table Preview</h2>
+    {% if table_rows %}
+    <table>
+      <thead>
+        <tr>
+          {% for header in table_headers %}
+          <th>{{ header }}</th>
+          {% endfor %}
+        </tr>
+      </thead>
+      <tbody>
+        {% for row in table_rows %}
+        <tr>
+          {% for cell in row %}
+          <td>
+            {% if loop.index0 == 4 and cell.startswith('http') %}
+              <img src="{{ cell }}" alt="Evidence" width="150" />
+            {% else %}
+              {{ cell }}
+            {% endif %}
+          </td>
+          {% endfor %}
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% else %}
+    <p>Select “View” to preview a table.</p>
+    {% endif %}
+  </div>
+
+</body>
+</html>
+****************************************************************************************************************************************************
