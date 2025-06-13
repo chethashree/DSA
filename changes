@@ -83,3 +83,99 @@ if __name__ == "__main__":
     app.run(debug=True)
 
 ***********************************************************************************
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Dashboard - Latest Checks</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            background-color: #f4f6f9;
+            padding: 30px;
+            margin: 0;
+        }
+
+        h1 {
+            color: #2c3e50;
+            margin-bottom: 20px;
+        }
+
+        .date-section {
+            background-color: #ffffff;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+            margin-bottom: 25px;
+        }
+
+        .date-section h2 {
+            color: #34495e;
+            margin-top: 0;
+        }
+
+        ul {
+            list-style: none;
+            padding-left: 0;
+        }
+
+        li {
+            padding: 10px 0;
+            border-bottom: 1px solid #ecf0f1;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        li:last-child {
+            border-bottom: none;
+        }
+
+        .app-name {
+            font-weight: bold;
+            color: #2980b9;
+        }
+
+        .file-name {
+            color: #7f8c8d;
+        }
+
+        .view-button {
+            background-color: #2ecc71;
+            color: white;
+            border: none;
+            padding: 6px 14px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.9em;
+            transition: background-color 0.2s ease;
+            text-decoration: none;
+        }
+
+        .view-button:hover {
+            background-color: #27ae60;
+        }
+    </style>
+</head>
+<body>
+    <h1>📄 Latest XML Checks by Date</h1>
+    {% for date, apps in data.items() %}
+        <div class="date-section">
+            <h2>📅 {{ date }}</h2>
+            <ul>
+                {% for app, info in apps.items() %}
+                    <li>
+                        <div>
+                            <span class="app-name">{{ app }}</span>
+                            — <span class="file-name">{{ info.file }}</span>
+                        </div>
+                        <a class="view-button" href="{{ info.path }}" target="_blank">View</a>
+                    </li>
+                {% endfor %}
+            </ul>
+        </div>
+    {% endfor %}
+</body>
+</html>
+********************************************************************************************************************
