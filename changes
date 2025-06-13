@@ -1,0 +1,85 @@
+<html>
+<head>
+    <title>Dashboard - Latest Checks</title>
+</head>
+<body>
+    <h1>Latest XML Checks by Date</h1>
+    {% for date, apps in data.items() %}
+        <h2>{{ date }}</h2>
+        <ul>
+            {% for app, info in apps.items() %}
+                <li><strong>{{ app }}</strong> — {{ info.file }}
+                    <a href="{{ info.path }}" target="_blank">View</a>
+                </li>
+            {% endfor %}
+        </ul>
+    {% endfor %}
+</body>
+</html>
+
+**********************************************************
+
+from flask import Flask, render_template, request
+import os
+import re
+from datetime import datetime
+import xml.etree.ElementTree as ET
+
+app = Flask(__name__)
+BASE_DIR = "data"
+FILENAME_PATTERN = re.compile(r"check_verified_table_(\d+)\.xml")
+
+@app.route("/")
+def dashboard():
+    data = {}
+
+    for app_name in sorted(os.listdir(BASE_DIR)):
+        app_path = os.path.join(BASE_DIR, app_name)
+        if not os.path.isdir(app_path):
+            continue
+
+        for date_folder in os.listdir(app_path):
+            date_path = os.path.join(app_path, date_folder)
+            if not os.path.isdir(date_path):
+                continue
+
+            files = [f for f in os.listdir(date_path) if FILENAME_PATTERN.match(f)]
+            if not files:
+                continue
+
+            # Get latest file based on timestamp in filename
+            latest_file = max(files, key=lambda x: int(FILENAME_PATTERN.search(x).group(1)))
+            data.setdefault(date_folder, {})[app_name] = {
+                "file": latest_file,
+                "path": f"/view_file?app={app_name}&date={date_folder}&file={latest_file}"
+            }
+
+    # Sort date folders descending
+    sorted_data = dict(sorted(data.items(), reverse=True))
+    return render_template("dashboard.html", data=sorted_data)
+
+@app.route("/view_file")
+def view_file():
+    app_name = request.args.get("app")
+    date = request.args.get("date")
+    filename = request.args.get("file")
+
+    full_path = os.path.join(BASE_DIR, app_name, date, filename)
+    if not os.path.exists(full_path):
+        return f"<h3>File not found: {filename}</h3>", 404
+
+    # Parse XML for preview
+    tree = ET.parse(full_path)
+    root = tree.getroot()
+
+    rows = []
+    for row_elem in root.findall("Row"):
+        row = [col.text or "" for col in row_elem]
+        rows.append(row)
+
+    return render_template("view_saved_table.html", account_name=app_name, rows=rows)
+
+if __name__ == "__main__":
+    app.run(debug=True)
+
+***********************************************************************************
