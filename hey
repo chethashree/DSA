@@ -1,0 +1,1803 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Saved Checks for {{ account_name }}</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            background: #f4f9f4;
+            padding: 20px;
+        }
+
+        h2 {
+            color: #2c3e50;
+        }
+
+        table {
+            border-collapse: collapse;
+            width: 100%;
+            margin-top: 20px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            background-color: white;
+        }
+
+        th,
+        td {
+            border: 1px solid #ccc;
+            padding: 10px;
+            vertical-align: top;
+            text-align: left;
+        }
+
+        th {
+            background-color: #2ecc71;
+            color: white;
+        }
+
+        img.evidence-preview {
+            max-width: 550px;
+            max-height: 500px;
+            display: block;
+            margin: 10px auto;
+            object-fit: contain;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+        }
+
+        .narrow-id {
+            width: 80px;
+        }
+
+        .narrow-name {
+            width: 120px;
+        }
+
+        .narrow-how {
+            width: 180px;
+        }
+
+        .narrow-outcome {
+            width: 150px;
+        }
+
+        .narrow-passfail {
+            width: 80px;
+            text-align: center;
+        }
+
+        .narrow-notes {
+            width: 160px;
+        }
+        .badge {
+    padding: 6px 12px;
+    border-radius: 20px;
+    font-weight: bold;
+    font-size: 0.9em;
+    display: inline-block;
+    text-align: center;
+}
+
+.badge-pass {
+    background-color: #d4edda;
+    color: #155724;
+    border: 1px solid #c3e6cb;
+}
+
+.badge-fail {
+    background-color: #f8d7da;
+    color: #721c24;
+    border: 1px solid #f5c6cb;
+}
+
+.badge-empty {
+    background-color: #e2e3e5;
+    color: #6c757d;
+    border: 1px solid #d6d8db;
+}
+
+    </style>
+</head>
+
+<body>
+
+    <h2>Saved Checks for {{ account_name }}</h2>
+    <div style="margin-bottom: 30px; padding: 20px; background-color: #fff; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1);">
+    <h3 style="color: #2ecc71;">📧 Outlook Mail Template</h3>
+    <p><strong>Subject:  </strong> {{ subject }}</p>
+    <p><strong>Recipients:  </strong> {{ recipients }}</p>
+    <p><strong>Body:  </strong>{{ body }}</p>
+    <!-- <div style="white-space: pre-line; border: 1px solid #ddd; padding: 10px; background-color: #f9f9f9; border-radius: 6px;"> -->
+        
+    <!-- </div> -->
+</div>
+
+    <table>
+        <thead>
+            <tr>
+                <th class="narrow-id">Check ID</th>
+                <th class="narrow-name">Check Name</th>
+                <th class="narrow-how">How to Perform</th>
+                <th class="narrow-outcome">Expected Outcome</th>
+                <th>Evidence</th>
+                <th class="narrow-passfail">Pass/Fail</th>
+                <th class="narrow-notes">Additional Notes</th>
+            </tr>
+        </thead>
+    <tbody>
+{% for row in rows %}
+<tr>
+    {% for col in row %}
+        {% if col and ('data:image' in col or col.endswith('.png') or col.endswith('.jpg') or col.endswith('.jpeg') or col.endswith('.webp')) %}
+            <td><img src="{{ col }}" alt="Evidence" class="evidence-preview"></td>
+        {% elif loop.index == 6 %}
+            <td>
+                {% if col.strip().lower() == "pass" %}
+                    <span class="badge badge-pass">✓ PASS</span>
+                {% elif col.strip().lower() == "fail" %}
+                    <span class="badge badge-fail">✗ FAIL</span>
+                {% else %}
+                    <span class="badge badge-empty">--</span>
+                {% endif %}
+            </td>
+        {% else %}
+            <td>{{ col }}</td>
+        {% endif %}
+    {% endfor %}
+</tr>
+{% endfor %}
+</tbody>
+
+
+    </table>
+
+</body>
+
+</html>
+
+*****************************************************************************************************************************
+
+    <!DOCTYPE html>
+    <html lang="en">
+
+    <head>
+        <meta charset="UTF-8">
+        <title>Flask XML Dashboard</title>
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <style>
+            body {
+                margin: 0;
+                font-family: 'Segoe UI', sans-serif;
+                background: #f4f9f4;
+            }
+
+            header {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                padding: 10px 20px;
+                background-color: #2ecc71;
+                color: white;
+                flex-wrap: wrap;
+            }
+
+            header img {
+                height: 30px;
+                margin-right: 10px;
+            }
+
+            header span {
+                font-size: 1.4em;
+            }
+
+            .btn-group button {
+                background-color: white;
+                border: none;
+                padding: 4px 8px;
+                margin-left: 10px;
+                color: #2ecc71;
+                border-radius: 6px;
+                cursor: pointer;
+                font-weight: bold;
+            }
+
+            .btn-group button:hover {
+                background-color: #27ae60;
+                color: white;
+            }
+
+            .container {
+                display: flex;
+                flex-wrap: wrap;
+            }
+
+            .sidebar {
+                width: 200px;
+                padding: 10px;
+                overflow-y: auto;
+                border-left: 2px solid #ccc;
+                max-height: 85vh;
+                background-color: #ecf9ec;
+}
+
+
+            .sidebar button {
+                width: 50%;
+                margin-bottom: 15px;
+                padding: 4px 8px;
+                background-color: #2ecc71;
+                color: white;
+                border: none;
+                border-radius: 6px;
+                cursor: pointer;
+            }
+
+            .sidebar button:disabled {
+                background-color: #ccc;
+            }
+
+            .main {
+                flex: 1;
+                padding: 30px;
+                min-width: 300px;
+            }
+
+            .form-box {
+                max-width: 400px;
+                margin: 0 auto;
+                background: white;
+                padding: 30px;
+                border-radius: 12px;
+                box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            }
+
+            label {
+                display: block;
+                margin: 10px 0 5px;
+                color: #2c3e50;
+            }
+
+            input[type="text"],
+            input[type="file"] {
+                width: 100%;
+                padding: 10px;
+                border-radius: 6px;
+                border: 1px solid #ccc;
+            }
+
+            .form-box button {
+                width: 100%;
+                margin-top: 15px;
+                padding: 12px;
+                background-color: #2ecc71;
+                color: white;
+                border: none;
+                border-radius: 6px;
+                cursor: pointer;
+            }
+
+            .toggle-link {
+                text-align: center;
+                margin-top: 15px;
+            }
+
+            .toggle-link a {
+                color: #2ecc71;
+                text-decoration: none;
+            }
+
+            .dashboard-wrapper {
+                display: flex;
+                flex-direction: row;
+                justify-content: flex-start;
+                align-items: center;
+                padding: 12px 16px;
+                background-color: #eafaf1;
+                border-radius: 10px;
+                margin-top: 15px;
+                box-shadow: 0 2px 5px rgba(0, 0, 0, 0.08);
+                font-size: 0.9em;
+            }
+
+            .dashboard-content {
+                padding: 14px 18px;
+                background: white;
+                border-radius: 10px;
+                box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+                color: #2c3e50;
+                font-size: 0.95em;
+                line-height: 1.4em;
+            }
+
+            /* Table Styling */
+            #checksTable {
+                width: 100%;
+                border-collapse: collapse;
+                margin-top: 20px;
+            }
+
+            #checksTable th,
+            #checksTable td {
+                padding: 12px 15px;
+                text-align: left;
+                border: 1px solid #ddd;
+                font-size: 0.95em;
+            }
+
+            #checksTable th {
+                background-color: #2ecc71;
+                color: white;
+            }
+
+            #checksTable td {
+                background-color: #f9f9f9;
+            }
+
+            #checksTable tr:hover {
+                background-color: #ecf9ec;
+                cursor: pointer;
+            }
+
+            #checksTable td input[type="file"] {
+                margin-top: 10px;
+            }
+
+            .checkbox-grid {
+                display: grid;
+                grid-template-columns: repeat(4, 1fr);
+                gap: 20px;
+                margin-top: 20px;
+                align-items: center;
+            }
+
+            .checkbox-grid label {
+                background: #ecf9ec;
+                padding: 10px;
+                border-radius: 8px;
+                display: flex;
+                align-items: center;
+                font-size: 1.05em;
+                font-weight: 500;
+                color: #2c3e50;
+                transition: background 0.3s ease;
+                cursor: pointer;
+            }
+
+            .checkbox-grid label:hover {
+                background: #d4f4d4;
+            }
+
+            .checkbox-grid input[type="checkbox"] {
+                margin-right: 10px;
+                accent-color: #2ecc71;
+            }
+
+            .checkbox-grid button {
+                grid-column: span 4;
+                margin-top: 10px;
+                padding: 12px;
+                background-color: #2ecc71;
+                color: white;
+                border: none;
+                border-radius: 6px;
+                cursor: pointer;
+                font-size: 1em;
+                transition: background-color 0.3s ease;
+            }
+
+            .checkbox-grid button:hover {
+                background-color: #27ae60;
+            }
+
+
+            /* Responsive tweaks */
+            @media (max-width: 768px) {
+                header {
+                    flex-direction: column;
+                    align-items: flex-start;
+                    gap: 10px;
+                }
+
+                .container {
+                    flex-direction: column;
+                }
+
+                .sidebar {
+                    width: 100%;
+                }
+
+                .main {
+                    padding: 20px;
+                }
+            }
+
+        #saveForm {
+        margin-top: 20px;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+    }
+
+    #saveForm button {
+        background-color: #28a745; /* Green */
+        color: white;
+        font-size: 16px;
+        padding: 10px 20px;
+        border: none;
+        border-radius: 8px;
+        cursor: pointer;
+        transition: background-color 0.3s ease, transform 0.2s ease;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    }
+
+    #saveForm button:hover {
+        background-color: #218838;
+        transform: scale(1.05);
+    }
+
+    #saveForm button:active {
+        background-color: #1e7e34;
+    }
+    #screenshotSidebar {
+    position: fixed;
+    top: 100px;
+    left: 100px;
+    width: 250px;
+    background-color: #f9f9f9;
+    border: 1px solid #ccc;
+    padding: 10px;
+    border-radius: 8px;
+    box-shadow: 0 0 10px rgba(0,0,0,0.2);
+    z-index: 9999;
+    cursor: move;
+}
+
+.scrollable {
+    max-height: 200px;
+    overflow-y: auto;
+    margin-top: 10px;
+    border-top: 1px solid #ddd;
+    padding-top: 10px;
+}
+
+            #screenshotsList img {
+                width: 100%;
+                border: 1px solid #aaa;
+                border-radius: 8px;
+                box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+                cursor: grab;
+                margin-bottom: 10px;
+            }
+
+            .drop-area {
+                border: 1px dashed #aaa;
+                padding: 10px;
+                text-align: center;
+                background-color: #fff;
+            }
+            #screenshotSidebar h4 {
+            margin-top: 0;
+            font-size: 1.1em;
+            color: #2c3e50;
+            }
+
+            #activateScreenshotBtn {
+            background-color: #2ecc71;
+            border: none;
+            color: white;
+            padding: 8px 16px;
+            margin-bottom: 10px;
+            border-radius: 6px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background-color 0.3s ease, transform 0.2s ease;
+            width: 100%;
+            }
+
+            #activateScreenshotBtn:hover {
+            background-color: #27ae60;
+            transform: scale(1.03);
+            }
+
+
+            .container {
+                display: flex;
+            }
+            .sidebar {
+                width: 250px;
+                padding: 10px;
+                background-color: #ecf9ec;
+                overflow-y: auto;
+                max-height: 90vh;
+            }
+            .scrollable {
+                overflow-y: auto;
+                max-height: 80vh;
+            }
+            .screenshot-img {
+                width: 100%;
+                margin-bottom: 10px;
+                border-radius: 6px;
+            }
+            
+    #screenshotSidebar {
+        display: none; 
+    }
+
+.pass-fail-cell {
+    display: flex;
+    justify-content: center;
+    gap: 15px;
+    padding: 8px 0;
+}
+
+.radio-option {
+    display: flex;
+    align-items: center;
+    padding: 6px 12px;
+    border-radius: 20px;
+    font-weight: 600;
+    font-size: 0.95em;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    border: 2px solid transparent;
+}
+
+.radio-option input[type="radio"] {
+    margin-right: 8px;
+    accent-color: #2ecc71; /* green */
+    cursor: pointer;
+}
+
+.radio-option.pass {
+    background-color: #d4edda;
+    color: #155724;
+    border: 1px solid #c3e6cb;
+}
+
+.radio-option.fail {
+    background-color: #f8d7da;
+    color: #721c24;
+    border: 1px solid #f5c6cb;
+}
+
+.radio-option:hover {
+    transform: scale(1.05);
+    border-color: #2ecc71;
+}
+.clean-marquee {
+  width: 100%;
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+.clean-text {
+  display: inline-block;
+  padding-left: 100%;
+  animation: cleanScroll 10s linear infinite;
+  color: #d35400;
+  font-weight: bold;
+  font-size: 1em;
+}
+
+@keyframes cleanScroll {
+  0% {
+    transform: translateX(0%);
+  }
+  100% {
+    transform: translateX(-100%);
+  }
+}
+
+
+
+        </style>
+    </head>
+
+    <body>
+        <!-- <header>
+            <div style="display: flex; align-items: center;">
+                <img src="{{ url_for('static', filename='images/bnp.jpg') }}" alt="Logo">
+                <span>BNP PARIBAS | SOW Dashboard</span>
+            </div>
+            <div class="btn-group">
+                {% if not logged_in %}
+                <button id="registerBtn" onclick="showForm('register')">Register</button>
+                <button id="loginBtn" onclick="showForm('login')">Login</button>
+                {% endif %}
+                {% if logged_in %}
+                
+                <form action="/logout" method="get" style="display:inline;">
+                    <button type="submit">Logout</button>
+                </form>
+                {% endif %}
+            </div>
+        </header> -->
+
+        <header>
+  <div style="display: flex; align-items: center;">
+    <img src="{{ url_for('static', filename='images/bnp.jpg') }}" alt="Logo">
+    <span style="font-size: 1.4em;">BNP PARIBAS | SOW Dashboard</span>
+  </div>
+
+  {% if logged_in %}
+  <div style="display: flex; align-items: center; gap: 16px;">
+    <!-- Account name with hover -->
+    <div style="position: relative;">
+      <span id="accountNameHover" style="color: white; font-size: 0.95em; font-weight: 600; cursor: pointer;">
+        {{ account_name }}
+      </span>
+      <div id="hoverProfile" style="display: none; position: absolute; top: 30px; right: 0; background: #111; color: white; font-size: 0.75em; width: 180px; padding: 10px 12px; border-radius: 6px; box-shadow: 0 4px 8px rgba(0,0,0,0.3); z-index: 1000;">
+        <div><strong>Account:</strong> {{ account_name }}</div>
+        <div><strong>App:</strong> {{ application_name }}</div>
+        <div><strong>SNOW:</strong> {{ service_now_name }}</div>
+      </div>
+    </div>
+
+    <!-- Logout icon button -->
+    <form action="/logout" method="get" style="display:inline;">
+      <button type="submit" style="background: transparent; border: none; cursor: pointer;">
+        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="white" viewBox="0 0 24 24">
+          <path d="M16 13v-2H7V8l-5 4 5 4v-3h9z"/>
+          <path d="M20 3H4c-1.1 0-2 .9-2 2v4h2V5h16v14H4v-4H2v4c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2z"/>
+        </svg>
+      </button>
+    </form>
+  </div>
+  {% else %}
+  <div class="btn-group">
+    <button id="registerBtn" onclick="showForm('register')">Register</button>
+    <button id="loginBtn" onclick="showForm('login')">Login</button>
+  </div>
+  {% endif %}
+</header>
+
+
+
+
+
+
+<span style="margin-left: auto; position: relative; display: inline-block;">
+    <span id="accountNameHover" style="cursor: pointer; font-weight: bold; color: white;">
+        {{ account_name }}
+    </span>
+    <div id="hoverProfile" style="display:none; position: absolute; top: 30px; right: 0; background: #ecf9ec; width: 250px; padding: 15px; border-left: 2px solid #2ecc71; box-shadow: -2px 2px 10px rgba(0,0,0,0.1); border-radius: 8px; z-index: 1000;">
+        <h4 style="margin-top: 0;">User Profile</h4>
+        <p><strong>Account:</strong> {{ account_name }}</p>
+        <p><strong>Application:</strong> {{ application_name }}</p>
+        <p><strong>ServiceNow:</strong> {{ service_now_name }}</p>
+    </div>
+</span>
+</header>
+
+
+
+
+        <div class="container">
+            <!-- Sidebar -->
+            <div class="sidebar">
+                <button {% if not logged_in %}disabled{% endif %}>Create</button>
+                <button {% if not logged_in %}disabled{% endif %}>Preview</button>
+                <button onclick="window.location.href='/view_saved_table'" {% if not logged_in %}disabled{% endif %}>View</button>
+
+                
+            </div>
+
+            <!-- Main Content -->
+            <div class="main">
+                <!-- Register/Login Forms -->
+                <div id="register" class="form-box" style="display:none;">
+                    <h2>Register</h2>
+                    <form action="/register" method="post">
+                        <label>Account Name</label>
+                        <input type="text" name="account_name" required>
+                        <label>Application Name</label>
+                        <input type="text" name="application_name" required>
+                        <label>Service Now Name</label>
+                        <input type="text" name="service_now_name" required>
+                        <button type="submit">Register</button>
+                    </form>
+                    <div class="toggle-link">
+                        <a href="javascript:void(0)" onclick="showForm('login')">Already a user? Login here</a>
+                    </div>
+                </div>
+
+                <div id="login" class="form-box" style="display:none;">
+                    <h2>Login</h2>
+                    <form action="/login" method="post">
+                        <label>Account Name</label>
+                        <input type="text" name="account_name" required>
+                        <button type="submit">Login</button>
+                    </form>
+                    <div class="toggle-link">
+                        <a href="javascript:void(0)" onclick="showForm('register')">New user? Register here</a>
+                    </div>
+                </div>
+
+                {% if logged_in %}
+           <div id="oneTimeNotice" class="clean-marquee" style="display: none;">
+  <span class="clean-text">🚨 This is a one-time activity</span>
+</div>
+
+
+<div id="emailTemplate" style="margin-top: 20px; display: none;">
+    <h3 style="font-size: 1.4em; color: #2ecc71;">Outlook Email Template</h3>
+    <label>Subject</label>
+    <input type="text" id="mailSubject" placeholder="Enter email subject" style="width: 100%; padding: 10px; margin-bottom: 10px; border-radius: 6px; border: 1px solid #ccc;">
+    
+    <label>Recipients (comma-separated)</label>
+    <textarea id="mailRecipients" placeholder="e.g. john@example.com, jane@bnp.com" style="width: 100%; padding: 10px; margin-bottom: 10px; border-radius: 6px; border: 1px solid #ccc; "></textarea>
+    
+    <label>Body (Partial)</label>
+    <textarea id="mailBody" placeholder="Body text for the Outlook email..." style="width: 100%; padding: 10px; border-radius: 6px; border: 1px solid #ccc; ;"></textarea>
+</div>
+
+<div id="createContainer" style="margin-top: 20px; display: none;">
+    <h3 style="font-size: 1.5em; margin-bottom: 20px; color: #2ecc71;">Select Checks:</h3>
+    <table id="checkTable" style="width: 100%; border-collapse: collapse; margin-bottom: 20px; box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.1); border-radius: 12px; overflow: hidden;">
+        <thead>
+            <tr style="background-color: #2ecc71;">
+                <th style="padding: 10px; text-align: left; font-weight: bold; color: #fff;">Check Name</th>
+                <th style="padding: 14px; text-align: left; font-weight: bold; color: #fff;">How to Perform</th>
+                <th style="padding: 14px; text-align: left; font-weight: bold; color: #fff;">Expected Outcome</th>
+            </tr>
+        </thead>
+        <tbody>
+            <script>
+                for (let i = 0; i < 25; i++) {
+                    document.write(`
+                        <tr style="background-color: #f9f9f9; transition: background-color 0.3s, transform 0.3s;">
+                            <td style="padding: 12px; border-bottom: 1px solid #ddd;"><input type="text" placeholder="Enter Check Name" class="check-name" style="width: 80%; padding: 10px; border: 1px solid #ccc; border-radius: 6px;"></td>
+                            <td style="padding: 12px; border-bottom: 1px solid #ddd;"><textarea placeholder="Enter How to Perform" class="how-to-perform" style="width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 6px; min-height: 50px;"></textarea></td>
+                            <td style="padding: 12px; border-bottom: 1px solid #ddd;"><textarea placeholder="Enter Expected Outcome" class="expected-outcome" style="width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 6px; min-height: 50px;"></textarea></td>
+                        </tr>
+                    `);
+                }
+            </script>
+        </tbody>
+    </table>
+    <button type="button" onclick="submitSelectedChecks()" style="padding: 12px 24px; background-color: #43a047; color: #fff; border: none; cursor: pointer; border-radius: 8px;">Submit</button>
+</div>
+
+<script>
+function submitSelectedChecks() {
+    const checks = [];
+    const rows = document.querySelectorAll('#checkTable tbody tr');
+
+    rows.forEach(row => {
+        const name = row.querySelector('.check-name').value.trim();
+        const howToPerform = row.querySelector('.how-to-perform').value.trim();
+        const expectedOutcome = row.querySelector('.expected-outcome').value.trim();
+
+        if (name && howToPerform && expectedOutcome) {
+            checks.push({ name, how_to_perform: howToPerform, expected_outcome: expectedOutcome });
+        }
+    });
+
+    const mailTemplate = {
+        subject: document.getElementById('mailSubject').value.trim(),
+        recipients: document.getElementById('mailRecipients').value.trim(),
+        body: document.getElementById('mailBody').value.trim()
+    };
+
+    fetch('/submit_checks', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ checks, mail_template: mailTemplate })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert('Selected checks and mail template saved successfully!');
+        } else {
+            alert('Failed to save data.');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('An error occurred while saving.');
+    });
+}
+
+</script>
+
+
+
+
+
+                <!-- View Container -->
+                <div id="viewContainer" style="margin-top: 20px; display:none;">
+                    <h3>Selected Checks</h3>
+                    <table id="checksTable">
+                        <thead>
+                            <tr>
+                                <th>Check ID</th>
+                                <th>Check Name</th>
+                                <th>How to Perform</th>
+                                <th>Expected Outcome</th>
+                                <th>Evidence</th>
+                                <th>Pass/Fail</th>
+                                <th>Additional Notes</th>
+                            </tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                    <form id="saveForm" method="POST" action="/save_table">
+                        <input type="hidden" name="table_data" id="table_data">
+                        <button type="button" onclick="saveTable()">Save Table</button>
+                    </form>
+                </div>
+                {% endif %}
+            </div>
+
+            <!-- Screenshot Gallery Sidebar -->
+        <!-- Screenshot Gallery Sidebar -->
+    <div id="screenshotSidebar">
+        <h4 id="dragHandle">Screenshot Gallery</h4>
+        <button id="activateScreenshotBtn" onclick="activateScreenshot()">Activate</button>
+        <button id="deactivateScreenshotBtn" onclick="deactivateScreenshot()">Deactivate</button>
+        <div id="screenshotsList" class="scrollable"></div>
+    </div>
+
+
+
+        </div>
+
+        
+
+        <script>
+            
+
+            function showForm(id) {
+                document.getElementById('register').style.display = 'none';
+                document.getElementById('login').style.display = 'none';
+                document.getElementById(id).style.display = 'block';
+            }
+
+            window.onload = function () {
+                const isLoggedIn = {{ 'true' if logged_in else 'false' }};
+                if (!isLoggedIn) showForm('login');
+            };
+
+            document.querySelectorAll('.sidebar button')[0].addEventListener('click', function () {
+                  document.getElementById('oneTimeNotice').style.display = 'block';
+            document.getElementById('emailTemplate').style.display = 'block';
+                document.getElementById('createContainer').style.display = 'block';
+                document.getElementById('viewContainer').style.display = 'none';
+                document.getElementById('screenshotSidebar').style.display = 'none';
+            });
+
+            
+
+        document.querySelectorAll('.sidebar button')[1].addEventListener('click', function () {
+        document.getElementById('createContainer').style.display = 'none';
+        document.getElementById('viewContainer').style.display = 'block';
+        document.getElementById('screenshotSidebar').style.display = 'block';
+        loadSelectedChecks();
+        loadScreenshots();  // <-- add this
+        setInterval(loadScreenshots, 10000); // refresh every 10 seconds
+
+    });
+
+
+    const sidebar = document.getElementById("screenshotSidebar");
+
+    let isDragging = false;
+    let offsetX, offsetY;
+
+    sidebar.addEventListener("mousedown", function(e) {
+        isDragging = true;
+        offsetX = e.clientX - sidebar.offsetLeft;
+        offsetY = e.clientY - sidebar.offsetTop;
+        sidebar.style.cursor = "grabbing";
+    });
+
+    document.addEventListener("mouseup", function() {
+        isDragging = false;
+        sidebar.style.cursor = "move";
+    });
+
+    document.addEventListener("mousemove", function(e) {
+        if (isDragging) {
+            sidebar.style.left = (e.clientX - offsetX) + "px";
+            sidebar.style.top = (e.clientY - offsetY) + "px";
+        }
+    });
+
+
+            
+
+            function loadSelectedChecks() {
+                fetch('/get_selected_checks')
+                    .then(res => res.json())
+                    .then(data => {
+                        const tbody = document.querySelector('#checksTable tbody');
+                        tbody.innerHTML = '';
+                        data.forEach((check, index) => {
+                            tbody.innerHTML += `<tr>
+                                <td>${index + 1}</td>
+                                <td>${check.name}</td>
+                                <td>${convertToLinks(check.how_to_perform)}</td>
+                                <td>${check.expected_outcome}</td>
+                                <td ondrop="handleDrop(event, ${index})" ondragover="event.preventDefault();" class="evidence-cell" data-index="${index}">
+                                    <div class="drop-area">Drag & Drop Image Here</div>
+                                    <img id="preview${index}" width="100" style="margin-top:5px;">
+                                </td>
+  <td class="pass-fail-cell">
+  <label class="radio-option pass">
+    <input type="radio" name="passfail_${index}" value="Pass"> Pass
+  </label>
+  <label class="radio-option fail">
+    <input type="radio" name="passfail_${index}" value="Fail"> Fail
+  </label>
+</td>
+
+                                <td contenteditable="true"></td>
+                            </tr>`;
+                        });
+                    });
+            }
+
+function convertToLinks(text) {
+    if (!text) return '';
+    return text.replace(/(https?:\/\/[^\s]+)/g, function(url) {
+        return `<a href="${url}" target="_blank" style="color:#2ecc71; text-decoration: underline;">${url}</a>`;
+    });
+}
+
+            
+            function handleDrop(event, index) {
+    event.preventDefault();
+    const imageUrl = event.dataTransfer.getData("text/plain");
+    const img = document.getElementById("preview" + index);
+    const dropArea = img.parentElement.querySelector(".drop-area");
+
+    if (img) {
+        img.src = imageUrl;
+        img.style.display = "block";
+    }
+
+    if (dropArea) {
+        dropArea.style.display = "none";
+    }
+}
+
+ 
+
+            function activateScreenshot() {
+        fetch("/activate_screenshot", {
+            method: "POST"
+        })
+        .then(response => response.json())
+        .then(data => {
+            alert(data.message);
+            if (data.status === "success") {
+                document.getElementById("screenshotSidebar").style.display = "block";
+                loadScreenshots();  // Load screenshots immediately upon activation
+                setInterval(loadScreenshots, 10000); // Refresh every 10 seconds
+            }
+        })
+        .catch(err => console.error("Error:", err));
+    }
+
+
+        function deactivateScreenshot() {
+        fetch("/deactivate_screenshot", {
+            method: "POST"
+        })
+        .then(response => response.json())
+        .then(data => {
+            alert(data.message);
+            if (data.status === "success") {
+                clearInterval(screeshotInterval);
+                screenshotInterval=null;
+            }
+        })
+        .catch(err => console.error("Error:", err));
+    }
+
+    function loadScreenshots() {
+        fetch("/get_screenshots")
+        .then(response => response.json())
+        .then(files => {
+            const container = document.getElementById("screenshotsList");
+            container.innerHTML = "";
+            if (files.length === 0) {
+                container.innerHTML = "<p>No screenshots available.</p>";
+            } else {
+                files.forEach(file => {
+                    const img = document.createElement("img");
+                    img.src = `/static/screenshots/${file}`;
+                    img.classList.add("screenshot-img");
+                    img.draggable = true;
+                    img.addEventListener("dragstart", (e) => {
+                        e.dataTransfer.setData("text/plain", img.src);
+                    });
+                    container.appendChild(img);
+                });
+            }
+        })
+        .catch(err => console.error("Error loading screenshots:", err));
+    }
+        
+        
+        </script>
+
+
+
+<script>
+function saveTable() {
+    const tableRows = document.querySelectorAll("#checksTable tbody tr");
+    const tableData = [];
+
+    tableRows.forEach(row => {
+        const cells = row.cells;
+
+        // Extract each column's content correctly
+        const check_id = cells[0]?.innerText.trim();
+        const check_name = cells[1]?.innerText.trim();
+        const how_to = cells[2]?.innerText.trim();
+        const expected = cells[3]?.innerText.trim();
+        
+        // For image
+        const evidence_img = cells[4].querySelector('img');
+        const evidence = evidence_img && evidence_img.src ? evidence_img.src : '';
+
+        // For Pass/Fail (radio input - if implemented)
+        let pass_fail = '';
+        const radioInputs = cells[5].querySelectorAll('input[type=radio]');
+        radioInputs.forEach(input => {
+            if (input.checked) pass_fail = input.value;
+        });
+
+        // Fallback for contenteditable
+        if (!pass_fail) pass_fail = cells[5]?.innerText.trim();
+
+        const notes = cells[6]?.innerText.trim();
+
+        tableData.push([check_id, check_name, how_to, expected, evidence, pass_fail, notes]);
+    });
+
+    // Send to backend
+    const formData = new URLSearchParams();
+    formData.append("table_data", JSON.stringify(tableData));
+
+    fetch("/save_table", {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/x-www-form-urlencoded"
+        },
+        body: formData
+    })
+    .then(res => res.text())
+    .then(data => alert(data))
+    .catch(err => alert("Error saving data: " + err));
+}
+</script>
+<script>
+  const accountName = document.getElementById("accountNameHover");
+  const hoverProfile = document.getElementById("hoverProfile");
+
+  accountName.addEventListener("mouseenter", () => {
+    hoverProfile.style.display = "block";
+  });
+
+  accountName.addEventListener("mouseleave", () => {
+    setTimeout(() => {
+      if (!hoverProfile.matches(":hover")) {
+        hoverProfile.style.display = "none";
+      }
+    }, 200);
+  });
+
+  hoverProfile.addEventListener("mouseleave", () => {
+    hoverProfile.style.display = "none";
+  });
+</script>
+    </body>
+    </html>
+
+
+**********************************************************************************************************************************************
+
+# from flask import Flask, render_template, request, redirect, url_for, jsonify, session
+# import os
+# import xml.etree.ElementTree as ET
+# from datetime import datetime
+# import subprocess
+
+
+# app = Flask(__name__)
+# app.secret_key = "user_session_id"   # Needed for session
+
+# XML_FILE = 'data/data.xml'
+# SELECTED_CHECKS_FILE = 'data/selected_checks.xml'
+
+
+# # Ensure XML file and structure exist
+# def initialize_xml():
+#     if not os.path.exists(XML_FILE):
+#         os.makedirs(os.path.dirname(XML_FILE), exist_ok=True)
+#         root = ET.Element("root")
+#         tree = ET.ElementTree(root)
+#         tree.write(XML_FILE)
+
+# def initialize_selected_checks_xml():
+#     if not os.path.exists(SELECTED_CHECKS_FILE):
+#         os.makedirs(os.path.dirname(SELECTED_CHECKS_FILE), exist_ok=True)
+#         root = ET.Element("selected_checks")
+#         tree = ET.ElementTree(root)
+#         tree.write(SELECTED_CHECKS_FILE)
+
+# @app.route('/submit_checks', methods=['POST'])
+# def submit_checks():
+#     initialize_selected_checks_xml()
+
+#     # Get the username from the session
+#     user_name = session.get('account_name')
+
+#     # If user is not logged in, reject the request
+#     if not user_name:
+#         return jsonify({'success': False, 'message': 'User not logged in'}), 400
+
+#     checks_data = request.json.get('checks', [])
+
+#     # Parse the XML file
+#     tree = ET.parse(SELECTED_CHECKS_FILE)
+#     root = tree.getroot()
+
+#     # Find the user element or create it if it does not exist
+#     user_elem = root.find(f"./user[@name='{user_name}']")
+#     if user_elem is None:
+#         user_elem = ET.Element('user', attrib={'name': user_name})
+#         root.append(user_elem)
+
+#     # Existing checks
+#     existing_check_names = {check.find('name').text for check in user_elem.findall('check')}
+
+#     # Iterate over the new checks data
+#     for check in checks_data:
+#         check_name = check.get('name', '')
+
+#         # If the check is already present, skip it
+#         if check_name in existing_check_names:
+#             print(f"Check '{check_name}' already exists. Skipping...")
+#             continue
+
+#         # Create new check element
+#         check_elem = ET.Element('check')
+
+#         name_elem = ET.SubElement(check_elem, 'name')
+#         name_elem.text = check_name
+
+#         how_elem = ET.SubElement(check_elem, 'how_to_perform')
+#         how_elem.text = check.get('how_to_perform', '')
+
+#         expected_elem = ET.SubElement(check_elem, 'expected_outcome')
+#         expected_elem.text = check.get('expected_outcome', '')
+
+#         # Append the new check to the user's checks
+#         user_elem.append(check_elem)
+
+#     # Write the updated XML back to the file
+#     tree.write(SELECTED_CHECKS_FILE, encoding='utf-8', xml_declaration=True)
+
+#     return jsonify({'success': True, 'message': 'Checks updated successfully'})
+
+
+# def get_account_details(account_name):
+#     initialize_xml()
+#     try:
+#         tree = ET.parse(XML_FILE)
+#         root = tree.getroot()
+#     except ET.ParseError:
+#         return None, None, None
+
+#     for entry in root.findall("entry"):
+#         if entry.find("account_name").text == account_name:
+#             application_name = entry.find("application_name").text
+#             service_now_name = entry.find("service_now_name").text
+#             timestamp = entry.find("timestamp").text
+#             return application_name, service_now_name, timestamp
+#     return None, None, None
+
+
+
+
+# @app.route("/", methods=["GET"])
+# def index():
+#     if 'account_name' in session:
+#         account_name = session['account_name']
+#         application_name, service_now_name, timestamp = get_account_details(account_name)
+#         return render_template("index.html", logged_in=True, account_name=account_name, application_name=application_name, service_now_name=service_now_name)
+#     else:
+#         return render_template("index.html", logged_in=False)
+
+# @app.route("/register", methods=["POST"])
+# def register():
+#     account_name = request.form.get("account_name")
+#     application_name = request.form.get("application_name")
+#     service_now_name = request.form.get("service_now_name")
+
+#     initialize_xml()
+#     tree = ET.parse(XML_FILE)
+#     root = tree.getroot()
+
+#     for entry in root.findall("entry"):
+#         if entry.find("account_name").text == account_name:
+#             return '''
+#                 <script>
+#                     alert("Account already exists!");
+#                     window.location.href = "/";
+#                 </script>
+#             '''
+
+#     new_entry = ET.SubElement(root, "entry")
+#     ET.SubElement(new_entry, "account_name").text = account_name
+#     ET.SubElement(new_entry, "application_name").text = application_name
+#     ET.SubElement(new_entry, "service_now_name").text = service_now_name
+#     ET.SubElement(new_entry, "timestamp").text = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
+#     tree.write(XML_FILE)
+#     return '''
+#         <script>
+#             alert("Registration Successful!");
+#             window.location.href = "/";
+#         </script>
+#     '''
+
+# @app.route("/login", methods=["POST"])
+# def login():
+#     account_name = request.form.get("account_name")
+#     application_name, service_now_name, timestamp = get_account_details(account_name)
+
+#     if application_name:
+#         session['account_name'] = account_name
+#         return redirect(url_for("index"))
+#     else:
+#         return '''
+#             <script>
+#                 alert("Invalid account name!");
+#                 window.location.href = "/";
+#             </script>
+#         '''
+
+# @app.route("/logout")
+# def logout():
+#     session.clear()
+#     return redirect(url_for("index"))
+
+# @app.route('/get_selected_checks', methods=['GET'])
+# def get_selected_checks():
+#     if 'account_name' not in session:
+#         return jsonify([])
+
+#     account_name = session['account_name']
+#     initialize_selected_checks_xml()
+#     tree = ET.parse(SELECTED_CHECKS_FILE)
+#     root = tree.getroot()
+#     selected = []
+
+#     # Find the user
+#     user_elem = root.find(f"./user[@name='{account_name}']")
+#     if user_elem is not None:
+#         for check in user_elem.findall('check'):
+#             selected.append({
+#                 'name': check.find('name').text or '',
+#                 'how_to_perform': check.find('how_to_perform').text or '',
+#                 'expected_outcome': check.find('expected_outcome').text or ''
+#             })
+
+#     return jsonify(selected)
+
+# @app.route('/save_table', methods=['POST'])
+# def save_table():
+#     table_data_json = request.form.get('table_data')
+#     if not table_data_json:
+#         return "No data received", 400
+
+#     import json
+#     table_data = json.loads(table_data_json)
+
+#     # Create XML structure
+#     import xml.etree.ElementTree as ET
+#     import os
+#     root = ET.Element("CheckVerifiedTable")
+
+#     # Fetch account_name from session or set as 'Anonymous'
+#     account_name = session.get('account_name', 'Anonymous')
+#     session_elem = ET.SubElement(root, "SessionDetails")
+#     ET.SubElement(session_elem, "AccountName").text = account_name
+
+#     for row in table_data:
+#         row_elem = ET.SubElement(root, "Row")
+#         for i, cell in enumerate(row):
+#             cell_elem = ET.SubElement(row_elem, f"Col{i+1}")
+#             cell_elem.text = cell
+
+#     # Save to XML file using account_name as filename
+#     os.makedirs("saved_tables", exist_ok=True)
+#     filepath = os.path.join("saved_tables", f"check_verified_table_{account_name}.xml")
+#     tree = ET.ElementTree(root)
+#     tree.write(filepath, encoding="utf-8", xml_declaration=True)
+
+#     return "Data saved successfully"
+
+# @app.route("/activate_screenshot", methods=["POST"])
+# def activate_screenshot():
+#     try:
+#         subprocess.Popen(['python', 'local_screenshot.py'])
+#         return jsonify({'status': 'success', 'message': 'Screenshot capturing activated.'})
+#     except Exception as e:
+#         return jsonify({'status': 'error', 'message': str(e)}), 500
+
+
+# @app.route("/get_screenshots", methods=["GET"])
+# def get_screenshots():
+#     screenshots_dir = os.path.join("static", "screenshots")
+#     if not os.path.exists(screenshots_dir):
+#         return jsonify([])
+
+#     files = os.listdir(screenshots_dir)
+#     return jsonify(files)
+
+# @app.route('/view_saved_table')
+# def view_saved_table():
+#     if 'account_name' not in session:
+#         return redirect(url_for('index'))
+
+#     account_name = session['account_name']
+#     file_path = os.path.join("saved_tables", f"check_verified_table_{account_name}.xml")
+
+#     if not os.path.exists(file_path):
+#         return f"<h3>No saved data found for {account_name}</h3>"
+
+#     tree = ET.parse(file_path)
+#     root = tree.getroot()
+
+#     rows = []
+#     for row_elem in root.findall("Row"):
+#         row_data = []
+#         for col in row_elem:
+#             row_data.append(col.text or "")
+#         rows.append(row_data)
+
+#     return render_template("view_saved_table.html", account_name=account_name, rows=rows)
+
+
+# if __name__ == "__main__":
+#     app.run(debug=True)
+
+
+
+from flask import Flask, render_template, request, redirect, url_for, jsonify, session
+import os
+import xml.etree.ElementTree as ET
+from datetime import datetime
+import subprocess
+import json
+import signal
+import shutil
+
+app = Flask(__name__)
+app.secret_key = "user_session_id"
+screen_process=None
+
+XML_FILE = 'data/data.xml'
+
+# Ensure XML file exists
+def initialize_xml():
+    if not os.path.exists(XML_FILE):
+        os.makedirs(os.path.dirname(XML_FILE), exist_ok=True)
+        root = ET.Element("root")
+        tree = ET.ElementTree(root)
+        tree.write(XML_FILE)
+
+def get_application_folder(application_name):
+    folder_path = os.path.join("data", application_name)
+    os.makedirs(folder_path, exist_ok=True)
+    return folder_path
+
+# @app.route('/submit_checks', methods=['POST'])
+# def submit_checks():
+#     account_name = session.get('account_name')
+#     if not account_name:
+#         return jsonify({'success': False, 'message': 'User not logged in'}), 400
+
+#     application_name, _, _ = get_account_details(account_name)
+#     folder = get_application_folder(application_name)
+#     filepath = os.path.join(folder, 'selected_checks.xml')
+
+#     if not os.path.exists(filepath):
+#         root = ET.Element("application", attrib={"name": application_name})
+#         tree = ET.ElementTree(root)
+#         tree.write(filepath)
+
+#     tree = ET.parse(filepath)
+#     root = tree.getroot()
+
+#     existing_check_names = {check.find('name').text for check in root.findall('check')}
+#     checks_data = request.json.get('checks', [])
+
+
+    
+
+#     for check in checks_data:
+#         if check.get('name') in existing_check_names:
+#             continue
+#         check_elem = ET.SubElement(root, 'check')
+#         ET.SubElement(check_elem, 'name').text = check.get('name', '')
+#         ET.SubElement(check_elem, 'how_to_perform').text = check.get('how_to_perform', '')
+#         ET.SubElement(check_elem, 'expected_outcome').text = check.get('expected_outcome', '')
+
+#     tree.write(filepath, encoding='utf-8', xml_declaration=True)
+#     return jsonify({'success': True, 'message': 'Checks updated successfully'})
+
+
+@app.route('/submit_checks', methods=['POST'])
+def submit_checks():
+    account_name = session.get('account_name')
+    if not account_name:
+        return jsonify({'success': False, 'message': 'User not logged in'}), 400
+
+    application_name, _, _ = get_account_details(account_name)
+    folder = get_application_folder(application_name)
+    filepath = os.path.join(folder, 'selected_checks.xml')
+
+    # Initialize XML if not present
+    if not os.path.exists(filepath):
+        root = ET.Element("application", attrib={"name": application_name})
+        tree = ET.ElementTree(root)
+        tree.write(filepath)
+
+    # Parse existing file
+    tree = ET.parse(filepath)
+    root = tree.getroot()
+
+    # Remove old mail_template if exists (to overwrite cleanly)
+    for old in root.findall('mail_template'):
+        root.remove(old)
+
+    # Handle mail template data
+    mail_data = request.json.get('mail_template', {})
+    if mail_data:
+        mail_elem = ET.SubElement(root, 'mail_template')
+        ET.SubElement(mail_elem, 'subject').text = mail_data.get('subject', '')
+        ET.SubElement(mail_elem, 'recipients').text = mail_data.get('recipients', '')
+        ET.SubElement(mail_elem, 'body').text = mail_data.get('body', '')
+
+    # Handle check data
+    existing_check_names = {check.find('name').text for check in root.findall('check')}
+    checks_data = request.json.get('checks', [])
+
+    for check in checks_data:
+        if check.get('name') in existing_check_names:
+            continue
+        check_elem = ET.SubElement(root, 'check')
+        ET.SubElement(check_elem, 'name').text = check.get('name', '')
+        ET.SubElement(check_elem, 'how_to_perform').text = check.get('how_to_perform', '')
+        ET.SubElement(check_elem, 'expected_outcome').text = check.get('expected_outcome', '')
+
+    # Save XML
+    tree.write(filepath, encoding='utf-8', xml_declaration=True)
+    return jsonify({'success': True, 'message': 'Checks and mail template saved successfully'})
+
+
+@app.route('/get_selected_checks', methods=['GET'])
+def get_selected_checks():
+    account_name = session.get('account_name')
+    if not account_name:
+        return jsonify([])
+
+    application_name, _, _ = get_account_details(account_name)
+    filepath = os.path.join(get_application_folder(application_name), 'selected_checks.xml')
+
+    if not os.path.exists(filepath):
+        return jsonify([])
+
+    tree = ET.parse(filepath)
+    root = tree.getroot()
+    selected = []
+
+    for check in root.findall('check'):
+        selected.append({
+            'name': check.find('name').text or '',
+            'how_to_perform': check.find('how_to_perform').text or '',
+            'expected_outcome': check.find('expected_outcome').text or ''
+        })
+    return jsonify(selected)
+
+# @app.route('/save_table', methods=['POST'])
+# def save_table():
+#     table_data_json = request.form.get('table_data')
+#     if not table_data_json:
+#         return "No data received", 400
+
+#     table_data = json.loads(table_data_json)
+#     account_name = session.get('account_name')
+#     application_name, _, _ = get_account_details(account_name)
+
+#     folder = get_application_folder(application_name)
+#     filepath = os.path.join(folder, 'check_verified_table.xml')
+
+#     root = ET.Element("CheckVerifiedTable")
+#     session_elem = ET.SubElement(root, "SessionDetails")
+#     ET.SubElement(session_elem, "AccountName").text = account_name
+
+#     for row in table_data:
+#         row_elem = ET.SubElement(root, "Row")
+#         for i, cell in enumerate(row):
+#             ET.SubElement(row_elem, f"Col{i+1}").text = cell
+
+#     tree = ET.ElementTree(root)
+#     tree.write(filepath, encoding="utf-8", xml_declaration=True)
+#     return "Data saved successfully"
+@app.route('/view_saved_table')
+def view_saved_table():
+    if 'account_name' not in session:
+        return redirect(url_for('index'))
+
+    account_name = session['account_name']
+    application_name, _, _ = get_account_details(account_name)
+    folder = get_application_folder(application_name)
+
+    latest_file = None
+    latest_time = None
+
+    for root_dir, _, files in os.walk(folder):
+        for f in files:
+            if f.startswith("check_verified_table") and f.endswith(".xml"):
+                path = os.path.join(root_dir, f)
+                file_time = os.path.getmtime(path)
+                if latest_time is None or file_time > latest_time:
+                    latest_time = file_time
+                    latest_file = path
+
+    if not latest_file:
+        return f"<h3>No saved data found for application {application_name}</h3>"
+
+    # Load check_verified_table XML
+    tree = ET.parse(latest_file)
+    root = tree.getroot()
+
+    rows = []
+    for row_elem in root.findall("Row"):
+        row_data = [col.text or "" for col in row_elem]
+        rows.append(row_data)
+
+    # Load mail template from selected_checks.xml
+    selected_path = os.path.join(folder, 'selected_checks.xml')
+    subject = recipients = body = ""
+    if os.path.exists(selected_path):
+        selected_tree = ET.parse(selected_path)
+        selected_root = selected_tree.getroot()
+        mail_elem = selected_root.find("mail_template")
+        if mail_elem is not None:
+            subject = mail_elem.findtext("subject", "")
+            recipients = mail_elem.findtext("recipients", "")
+            body = mail_elem.findtext("body", "")
+
+    return render_template("view_saved_table.html", account_name=account_name, rows=rows,
+                           subject=subject, recipients=recipients, body=body)
+
+
+def get_account_details(account_name):
+    initialize_xml()
+    try:
+        tree = ET.parse(XML_FILE)
+        root = tree.getroot()
+    except ET.ParseError:
+        return None, None, None
+
+    for entry in root.findall("entry"):
+        if entry.find("account_name").text == account_name:
+            return (
+                entry.find("application_name").text,
+                entry.find("service_now_name").text,
+                entry.find("timestamp").text,
+            )
+    return None, None, None
+
+@app.route("/", methods=["GET"])
+def index():
+    if 'account_name' in session:
+        account_name = session['account_name']
+        application_name, service_now_name, _ = get_account_details(account_name)
+        return render_template("index.html", logged_in=True, account_name=account_name, application_name=application_name, service_now_name=service_now_name)
+    return render_template("index.html", logged_in=False)
+
+@app.route("/register", methods=["POST"])
+def register():
+    account_name = request.form.get("account_name")
+    application_name = request.form.get("application_name")
+    service_now_name = request.form.get("service_now_name")
+
+    initialize_xml()
+    tree = ET.parse(XML_FILE)
+    root = tree.getroot()
+
+    for entry in root.findall("entry"):
+        if entry.find("account_name").text == account_name:
+            return '''<script>alert("Account already exists!"); window.location.href = "/";</script>'''
+
+    new_entry = ET.SubElement(root, "entry")
+    ET.SubElement(new_entry, "account_name").text = account_name
+    ET.SubElement(new_entry, "application_name").text = application_name
+    ET.SubElement(new_entry, "service_now_name").text = service_now_name
+    ET.SubElement(new_entry, "timestamp").text = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
+    tree.write(XML_FILE)
+    return '''<script>alert("Registration Successful!"); window.location.href = "/";</script>'''
+
+@app.route("/login", methods=["POST"])
+def login():
+    account_name = request.form.get("account_name")
+    application_name, _, _ = get_account_details(account_name)
+    if application_name:
+        session['account_name'] = account_name
+        return redirect(url_for("index"))
+    return '''<script>alert("Invalid account name!"); window.location.href = "/";</script>'''
+
+@app.route("/logout")
+def logout():
+    session.clear()
+    return redirect(url_for("index"))
+
+@app.route("/activate_screenshot", methods=["POST"])
+def activate_screenshot():
+    global screen_process
+    if screen_process is None or screen_process.poll() is not None:
+
+        try:
+            subprocess.Popen(['python', 'local_screenshot.py'])
+            return jsonify({'status': 'success', 'message': 'Screenshot capturing activated.'}),500
+        except Exception as e:
+            return jsonify({'status': 'error', 'message': str(e)}), 500
+    else:
+        return jsonify({'status':'error','message':'screeenshot already running'}),400
+
+
+@app.route("/deactivate_screenshot", methods=["POST"])
+def deactivate_screenshot():
+    global screen_process
+    if screen_process is None or screen_process.poll() is not None:
+
+        try:
+            os.kill(screen_process.pid,signal.SIGTERM)
+            screen_process=None
+            return jsonify({'status': 'success', 'message': 'Screenshot capturing deactivated.'}),500
+        except Exception as e:
+            return jsonify({'status': 'error', 'message': str(e)}), 500
+    else:
+        return jsonify({'status':'error','message':'No screeenshot process is  running'}),400
+
+@app.route("/get_screenshots", methods=["GET"])
+def get_screenshots():
+    screenshots_dir = os.path.join("static", "screenshots")
+    if not os.path.exists(screenshots_dir):
+        return jsonify([])
+
+    files = os.listdir(screenshots_dir)
+    return jsonify(files)
+
+
+def get_application_folder(application_name):
+    folder_path = os.path.join("data", application_name)
+    os.makedirs(folder_path, exist_ok=True)
+    return folder_path
+
+# @app.route('/extract_images_to_xml', methods=['POST'])
+# def extract_images_to_xml():
+#     if 'account_name' not in session:
+#         return jsonify({'success': False, 'message': 'User not logged in'}), 403
+
+#     account_name = session['account_name']
+#     application_name, _, _ = get_account_details(account_name)
+#     folder = get_application_folder(application_name)
+#     screenshots_dir = os.path.join("static", "screenshots")
+#     evidence_dir = os.path.join(folder, "evidence")
+#     os.makedirs(evidence_dir, exist_ok=True)
+
+#     # Load the latest check_verified_table
+#     latest_file = None
+#     latest_time = None
+#     for root_dir, _, files in os.walk(folder):
+#         for f in files:
+#             if f.startswith("check_verified_table") and f.endswith(".xml"):
+#                 path = os.path.join(root_dir, f)
+#                 file_time = os.path.getmtime(path)
+#                 if latest_time is None or file_time > latest_time:
+#                     latest_time = file_time
+#                     latest_file = path
+
+#     if not latest_file:
+#         return jsonify({'success': False, 'message': 'No check_verified_table found'}), 404
+
+#     tree = ET.parse(latest_file)
+#     root = tree.getroot()
+
+#     evidence_xml = ET.Element("Evidence")
+#     for row in root.findall("Row"):
+#         image_url = row.find("Col5").text or ""
+#         if image_url:
+#             image_name = os.path.basename(image_url)
+#             source_path = os.path.join(screenshots_dir, image_name)
+#             target_path = os.path.join(evidence_dir, image_name)
+#             if os.path.exists(source_path):
+#                 shutil.copyfile(source_path, target_path)
+#                 ET.SubElement(evidence_xml, "Image").text = f"evidence/{image_name}"
+
+#     tree = ET.ElementTree(evidence_xml)
+#     tree.write(os.path.join(folder, "evidence_log.xml"), encoding="utf-8", xml_declaration=True)
+#     return jsonify({'success': True, 'message': 'Evidence images saved and logged.'})
+
+@app.route('/save_table', methods=['POST'])
+def save_table():
+    table_data_json = request.form.get('table_data')
+    if not table_data_json:
+        return "No data received", 400
+
+    table_data = json.loads(table_data_json)
+    account_name = session.get('account_name')
+    application_name, _, _ = get_account_details(account_name)
+
+    folder = get_application_folder(application_name)
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    filepath = os.path.join(folder, f'check_verified_table_{timestamp}.xml')
+
+    root = ET.Element("CheckVerifiedTable")
+    session_elem = ET.SubElement(root, "SessionDetails")
+    ET.SubElement(session_elem, "AccountName").text = account_name
+    ET.SubElement(session_elem, "Timestamp").text = timestamp
+
+    for row in table_data:
+        if all(row[:4]) and row[5]:
+            row_elem = ET.SubElement(root, "Row")
+            for i, cell in enumerate(row):
+                ET.SubElement(row_elem, f"Col{i+1}").text = cell
+
+    tree = ET.ElementTree(root)
+    tree.write(filepath, encoding="utf-8", xml_declaration=True)
+
+    # Call extract_images_to_xml functionality
+    screenshots_dir = os.path.join("static", "screenshots")
+    evidence_dir = os.path.join(folder, "evidence")
+    os.makedirs(evidence_dir, exist_ok=True)
+
+    evidence_xml = ET.Element("Evidence")
+    for row in root.findall("Row"):
+        image_url = row.find("Col5").text or ""
+        if image_url:
+            image_name = os.path.basename(image_url)
+            source_path = os.path.join(screenshots_dir, image_name)
+            target_path = os.path.join(evidence_dir, image_name)
+            if os.path.exists(source_path):
+                shutil.copyfile(source_path, target_path)
+                ET.SubElement(evidence_xml, "Image").text = f"evidence/{image_name}"
+
+    evidence_tree = ET.ElementTree(evidence_xml)
+    evidence_tree.write(os.path.join(folder, "evidence_log.xml"), encoding="utf-8", xml_declaration=True)
+
+    return "Data and evidence saved successfully"
+
+
+@app.route("/exportdoc",methods=["POST"])
+def exportdoc():
+    try:
+        account_name=session.get('account_name')
+        if not account_name:
+            return jsonify({'status':'error','message':'user session not found'}), 401       
+        print(f"Export trigerred by account: {account_name}")
+        subprocess.Popen(['python','web_scrap.py'])
+        return jsonify({'status':'success','message':f'Document exported by {account_name}.'})
+    except Exception as e:
+        return jsonify({'status':'error','message': str(e)}),500
+              
+
+
+if __name__ == "__main__":
+    app.run(debug=True)
+
+
+*************************************************************************************************************************
+
