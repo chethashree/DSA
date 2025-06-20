@@ -1,0 +1,73 @@
+<script>
+    window.onload = function () {
+        loadDashboard();  // Show dashboard first
+    };
+
+    function loadDashboard() {
+        fetch('/get_dashboard_content')
+            .then(res => res.json())
+            .then(data => {
+                const container = document.getElementById("dashboardContent");
+                container.innerHTML = "<h3 style='color:#2ecc71'>Latest XML Checks by Date</h3>";
+
+                for (const date in data) {
+                    container.innerHTML += `<h4>${date}</h4><ul>`;
+                    for (const app in data[date]) {
+                        const info = data[date][app];
+                        container.innerHTML += `<li><strong>${app}</strong> — ${info.file} <a href="${info.path}" target="_blank">View</a></li>`;
+                    }
+                    container.innerHTML += "</ul>";
+                }
+
+                // Hide login/register by default
+                document.getElementById("register").style.display = "none";
+                document.getElementById("login").style.display = "none";
+                document.getElementById("sidebar").style.display = "none";
+            });
+    }
+
+    function showForm(id) {
+        // Hide dashboard
+        document.getElementById("dashboardContent").style.display = "none";
+
+        // Show only selected form
+        document.getElementById("register").style.display = id === 'register' ? 'block' : 'none';
+        document.getElementById("login").style.display = id === 'login' ? 'block' : 'none';
+    }
+</script>
+
+
+********************************************************************
+<div id="dashboardContent"></div>
+*************************************************************
+@app.route("/get_dashboard_content")
+def get_dashboard_content():
+    import re
+    BASE_DIR = "data"
+    FILENAME_PATTERN = re.compile(r"check_verified_table_(\d+)\.xml")
+    data = {}
+
+    for app_name in sorted(os.listdir(BASE_DIR)):
+        app_path = os.path.join(BASE_DIR, app_name)
+        if not os.path.isdir(app_path):
+            continue
+
+        for date_folder in os.listdir(app_path):
+            date_path = os.path.join(app_path, date_folder)
+            if not os.path.isdir(date_path):
+                continue
+
+            files = [f for f in os.listdir(date_path) if FILENAME_PATTERN.match(f)]
+            if not files:
+                continue
+
+            latest_file = max(files, key=lambda x: int(FILENAME_PATTERN.search(x).group(1)))
+            data.setdefault(date_folder, {})[app_name] = {
+                "file": latest_file,
+                "path": f"/view_file?app={app_name}&date={date_folder}&file={latest_file}"
+            }
+
+    sorted_data = dict(sorted(data.items(), reverse=True))
+    return jsonify(sorted_data)
+
+*************************************
