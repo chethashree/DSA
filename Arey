@@ -1,0 +1,86 @@
+# =============================
+# Deployment Script (fixed paths)
+# =============================
+$rootfolder = "V:\.apstmp\deploy"
+$computers  = Get-Content "$rootfolder\ubix_IV2_bcknd_DEC_list.txt"
+$targetDriveLetter = 'C'               # drive letter on remote machines (no colon)
+$targetAdminShare = "$($targetDriveLetter)$"  # e.g. 'C$'
+$remoteBaseFolder = "Scripts"          # will create files under: C:\Scripts\<computer>\...
+$CHG = Read-Host 'What is your change number?'
+$rootdeploy = Join-Path $rootfolder "patch\$CHG"
+
+# Check if patch folder exists
+if (Test-Path -Path $rootdeploy) {
+    $source    = $rootdeploy
+    $FileList  = Get-ChildItem $source -Recurse -File
+} else {
+    Write-Host "ERROR - Patch doesn't exist in the deployment folder"
+    Start-Sleep 15
+    exit 1
+}
+
+$datetimestamp = Get-Date -f yyyyMMdd_HHmmss
+
+# =============================
+# Deployment to Remote Computers
+# =============================
+foreach ($computer in $computers) {
+    $remoteShareRoot = "\\$computer\$targetAdminShare"   # \\computer\C$
+    if (Test-Path -Path $remoteShareRoot) {
+        Write-Host "Working on Server $computer"
+    } else {
+        Write-Host "$remoteShareRoot does not exist. Creating base folder..."
+        try {
+            # Create the base "C:\Scripts\<computer>" structure
+            $baseRemotePath = Join-Path $remoteShareRoot $remoteBaseFolder
+            $baseRemotePath = Join-Path $baseRemotePath $computer
+            New-Item -ItemType Directory -Path $baseRemotePath -Force | Out-Null
+            Write-Host "Successfully ensured $baseRemotePath exists"
+        } catch {
+            Write-Host "ERROR: Unable to create base remote path $remoteShareRoot on $computer - $_"
+            continue
+        }
+    }
+
+    foreach ($f in $FileList) {
+        $FSource     = $f.FullName
+        # get folder relative to the rootdeploy (remove the rootdeploy prefix)
+        $FFolderRaw  = $f.Directory.FullName.Replace($rootdeploy, '')
+
+        # CLEAN UP relative path:
+        #  - remove any drive letter like "C:" that may appear
+        #  - remove any leading slashes/backslashes
+        $FFolder = $FFolderRaw -replace '^[A-Za-z]:', ''        # strip drive letter if present
+        $FFolder = $FFolder -replace '^[\\\/]+', ''             # strip leading slashes
+
+        $FName       = $f.Name
+        $FBackupName = "$($f.BaseName).bck_$datetimestamp"
+
+        # Build remote destination folder: \\computer\C$\Scripts\<computer>\<relative path>
+        $DestinationFolder = Join-Path "\\$computer\$targetAdminShare" $remoteBaseFolder
+        $DestinationFolder = Join-Path $DestinationFolder $computer
+        if ($FFolder -ne '') {
+            $DestinationFolder = Join-Path $DestinationFolder $FFolder
+        }
+
+        $DestinationFile = Join-Path $DestinationFolder $FName
+        $BackupFile      = Join-Path $DestinationFolder $FBackupName
+
+        try {
+            # Ensure remote subfolders exist
+            New-Item -ItemType Directory -Path $DestinationFolder -Force | Out-Null
+
+            if (Test-Path -Path $DestinationFile) {
+                Write-Host "$computer - File exists, will do backup to $FBackupName"
+                # Use Move-Item to rename/move across UNC
+                Move-Item -Path $DestinationFile -Destination $BackupFile -Force
+            }
+
+            Write-Host "Copying file $FName to $computer -> $DestinationFile"
+            Copy-Item -Path $FSource -Destination $DestinationFile -Force
+        }
+        catch {
+            Write-Host "ERROR: Unable to copy $FName to $computer - $_"
+        }
+    }
+}
