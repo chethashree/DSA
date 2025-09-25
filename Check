@@ -1,0 +1,97 @@
+# =============================
+# Deployment Script
+# =============================
+
+$rootfolder = "V:\.apstmp\deploy"
+$computers  = Get-Content "$rootfolder\ubix_IV2_bcknd_DEC_list.txt"
+$destrootfolder = "D$"
+$CHG = Read-Host 'What is your change number?'
+$rootdeploy = "$rootfolder\patch\$CHG"
+
+# Check if patch folder exists
+if (Test-Path -Path $rootdeploy) {
+    $source    = $rootdeploy
+    $FileList  = Get-ChildItem $source -Recurse -File
+} else {
+    Write-Host "ERROR - Patch doesn't exist in the deployment folder"
+    Start-Sleep 15
+    exit 1
+}
+
+$datetimestamp = Get-Date -f yyyyMMdd_HHmmss
+
+# =============================
+# Deployment to Remote Computers
+# =============================
+foreach ($computer in $computers) {
+    $destPath = "\\$computer\$destrootfolder"
+
+    if (Test-Path -Path $destPath) {
+        Write-Host "Working on Server $computer"
+    } else {
+        Write-Host "$destPath does not exist. Creating it..."
+        try {
+            New-Item -Path $destPath -ItemType Directory -Force | Out-Null
+            Write-Host "Successfully created $destPath"
+        } catch {
+            Write-Host "ERROR: Unable to create $destPath on $computer - $_"
+            continue
+        }
+    }
+
+    foreach ($f in $FileList) {
+        $FSource     = $f.FullName
+        $FFolder     = $f.Directory.FullName.Replace($rootdeploy,"")
+        $FName       = $f.Name
+        $FBackupName = "$($f.BaseName).bck_$datetimestamp"
+        $DestinationFile = "\\$computer\$destrootfolder$FFolder\$FName"
+        $BackupFile      = "\\$computer\$destrootfolder$FFolder\$FBackupName"
+
+        try {
+            # Ensure subfolders exist
+            New-Item -ItemType Directory -Path (Split-Path $DestinationFile) -Force | Out-Null
+
+            if (Test-Path -Path $DestinationFile) {
+                Write-Host "$computer - File exists, will do backup to $FBackupName"
+                Rename-Item $DestinationFile $BackupFile
+            }
+
+            Write-Host "Copying file $FName to $computer"
+            Copy-Item $FSource -Destination $DestinationFile -Force
+        }
+        catch {
+            Write-Host "ERROR: Unable to copy $FName to $computer - $_"
+        }
+    }
+}
+
+# =============================
+# Deployment to Share Drive V:
+# =============================
+$ShareRoot = "V:"
+Write-Host "Working on Share drive V:"
+
+foreach ($f in $FileList) {
+    $FSource     = $f.FullName
+    $FFolder     = $f.Directory.FullName.Replace($rootdeploy,"").Replace("\APPS\DEC\UBIX\", "\APPS\UBIX\")
+    $FName       = $f.Name
+    $FBackupName = "$($f.BaseName).bck_$datetimestamp"
+    $DestinationFile = "$ShareRoot$FFolder\$FName"
+    $BackupFile      = "$ShareRoot$FFolder\$FBackupName"
+
+    try {
+        # Ensure folder structure exists
+        New-Item -ItemType Directory -Path (Split-Path $DestinationFile) -Force | Out-Null
+
+        if (Test-Path -Path $DestinationFile) {
+            Write-Host "V:\ - File exists, will do backup to $FBackupName"
+            Rename-Item $DestinationFile $BackupFile
+        }
+
+        Write-Host "Copying file $FName to V:"
+        Copy-Item $FSource -Destination $DestinationFile -Force
+    }
+    catch {
+        Write-Host "ERROR: Unable to copy $FName to V: - $_"
+    }
+}
