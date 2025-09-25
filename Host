@@ -1,0 +1,25 @@
+# Ask for the remote hostname
+$hostname = Read-Host "Please enter the hostname or IP address of the remote computer"
+
+# Ask for the folder name
+$folderName = Read-Host "Please enter the name of the folder"
+
+# Ask for the path (this will be a path on the remote machine)
+$remotePath = Read-Host "Please enter the path where you want to create the folder on the remote computer"
+
+# Combine the path and folder name to create the full directory path on the remote machine
+$fullPath = Join-Path -Path $remotePath -ChildPath $folderName
+
+# Use PowerShell remoting to create the folder on the remote machine
+Invoke-Command -ComputerName $hostname -ScriptBlock {
+    param($fullPath, $folderName)
+    
+    # Check if the folder already exists
+    if (Test-Path -Path $fullPath) {
+        Write-Host "The folder '$folderName' already exists at the specified location."
+    } else {
+        # Create the folder if it doesn't exist
+        New-Item -Path $fullPath -ItemType Directory
+        Write-Host "The folder '$folderName' has been created at '$fullPath'."
+    }
+} -ArgumentList $fullPath, $folderName
