@@ -1,0 +1,490 @@
+import paramiko
+import time
+from datetime import datetime
+
+HOST = "your-server"
+USERNAME = "user"
+PASSWORD = "pass"
+REMOTE_DIR = "/reports"
+TARGET_FILE = "daily.csv"
+
+
+def connect():
+    ssh = paramiko.SSHClient()
+    ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+    ssh.connect(HOST, username=USERNAME, password=PASSWORD)
+    return ssh, ssh.open_sftp()
+
+
+ssh, sftp = connect()
+
+for attempt in range(10):
+
+    files = sftp.listdir_attr(REMOTE_DIR)
+
+    found = False
+
+    for file in files:
+        if file.filename == TARGET_FILE:
+            found = True
+
+            print("Found File:")
+            print("Name:", file.filename)
+            print("Path:", REMOTE_DIR + "/" + file.filename)
+            print("Size:", file.st_size)
+            print("Modified:", datetime.fromtimestamp(file.st_mtime))
+
+            sftp.get(
+                REMOTE_DIR + "/" + TARGET_FILE,
+                TARGET_FILE
+            )
+
+            print("Downloaded Successfully")
+            break
+
+    if found:
+        break
+
+    print("File not found. Retrying...")
+    time.sleep(10)
+
+sftp.close()
+ssh.close()
+
+
+
+############################
+
+import paramiko
+import time
+from datetime import datetime
+from pathlib import Path
+
+
+class SFTPUtility:
+    def __init__(
+        self,
+        host,
+        username,
+        password=None,
+        key_filename=None,
+        port=22,
+        connect_retries=5,
+        retry_delay=5,
+        timeout=10,
+    ):
+        self.host = host
+        self.port = port
+        self.username = username
+        self.password = password
+        self.key_filename = key_filename
+        self.connect_retries = connect_retries
+        self.retry_delay = retry_delay
+        self.timeout = timeout
+
+        self.ssh = None
+        self.sftp = None
+
+    # ----------------------------
+    # Connection Handling
+    # ----------------------------
+    def connect(self):
+        for attempt in range(1, self.connect_retries + 1):
+            try:
+                self.ssh = paramiko.SSHClient()
+                self.ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+
+                self.ssh.connect(
+                    hostname=self.host,
+                    port=self.port,
+                    username=self.username,
+                    password=self.password,
+                    key_filename=self.key_filename,
+                    timeout=self.timeout,
+                )
+
+                self.sftp = self.ssh.open_sftp()
+
+                print(f"[CONNECTED] SFTP connected to {self.host}")
+                return
+
+            except Exception as e:
+                print(f"[RETRY {attempt}] Connection failed: {e}")
+
+                if attempt == self.connect_retries:
+                    raise
+
+                time.sleep(self.retry_delay)
+
+    def close(self):
+        if self.sftp:
+            self.sftp.close()
+
+        if self.ssh:
+            self.ssh.close()
+
+        print("[CLOSED] Connection closed")
+
+    # ----------------------------
+    # Upload File
+    # ----------------------------
+    def upload_file(self, local_path, remote_path):
+        self.sftp.put(local_path, remote_path)
+        print(f"[UPLOAD] {local_path} → {remote_path}")
+
+    # ----------------------------
+    # Download File
+    # ----------------------------
+    def download_file(self, remote_path, local_path):
+        self.sftp.get(remote_path, local_path)
+        print(f"[DOWNLOAD] {remote_path} → {local_path}")
+
+    # ----------------------------
+    # List Files with Metadata
+    # ----------------------------
+    def list_files(self, remote_dir):
+        files = self.sftp.listdir_attr(remote_dir)
+
+        file_details = []
+
+        for file in files:
+            details = {
+                "name": file.filename,
+                "path": f"{remote_dir}/{file.filename}",
+                "size_bytes": file.st_size,
+                "modified_time": datetime.fromtimestamp(file.st_mtime),
+            }
+
+            file_details.append(details)
+
+        return file_details
+
+    # ----------------------------
+    # Wait Until File Exists
+    # ----------------------------
+    def wait_for_file(
+        self,
+        remote_path,
+        retries=10,
+        delay=10,
+    ):
+        for attempt in range(1, retries + 1):
+            try:
+                self.sftp.stat(remote_path)
+
+                print(f"[FOUND] File exists: {remote_path}")
+                return True
+
+            except FileNotFoundError:
+                print(f"[WAIT] File not found ({attempt}/{retries})")
+
+                if attempt < retries:
+                    time.sleep(delay)
+
+        return False
+
+    # ----------------------------
+    # Wait Until File Upload Complete
+    # ----------------------------
+    def wait_until_stable(
+        self,
+        remote_path,
+        checks=3,
+        interval=5,
+    ):
+        previous_size = -1
+
+        stable_count = 0
+
+        while stable_count < checks:
+            current_size = self.sftp.stat(remote_path).st_size
+
+            if current_size == previous_size:
+                stable_count += 1
+            else:
+                stable_count = 0
+
+            previous_size = current_size
+
+            time.sleep(interval)
+
+        print(f"[STABLE] File upload complete: {remote_path}")
+        return True
+
+    # ----------------------------
+    # Download When Ready
+    # ----------------------------
+    def wait_and_download(
+        self,
+        remote_path,
+        local_path,
+        retries=10,
+        delay=10,
+    ):
+        found = self.wait_for_file(remote_path, retries, delay)
+
+        if not found:
+            raise FileNotFoundError(f"{remote_path} not found after retries")
+
+        self.wait_until_stable(remote_path)
+
+        self.download_file(remote_path, local_path)
+
+
+
+####################
+
+import fnmatch
+import logging
+import time
+from datetime import datetime
+from functools import wraps
+
+import paramiko
+
+
+# -----------------------------------
+# Logging Setup
+# -----------------------------------
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s | %(levelname)s | %(message)s"
+)
+
+
+# -----------------------------------
+# Custom Exceptions
+# -----------------------------------
+class SFTPConnectionError(Exception):
+    pass
+
+
+class RemoteFileNotFoundError(Exception):
+    pass
+
+
+# -----------------------------------
+# Retry Decorator
+# -----------------------------------
+def retry(max_attempts=3, delay=5, exceptions=(Exception,)):
+    def decorator(func):
+        @wraps(func)
+        def wrapper(*args, **kwargs):
+            last_exception = None
+
+            for attempt in range(1, max_attempts + 1):
+                try:
+                    return func(*args, **kwargs)
+
+                except exceptions as e:
+                    last_exception = e
+
+                    logging.warning(
+                        f"{func.__name__} failed "
+                        f"(Attempt {attempt}/{max_attempts}): {e}"
+                    )
+
+                    if attempt < max_attempts:
+                        time.sleep(delay)
+
+            raise last_exception
+
+        return wrapper
+
+    return decorator
+
+
+# -----------------------------------
+# Main Utility Class
+# -----------------------------------
+class EnterpriseSFTP:
+
+    def __init__(
+        self,
+        host,
+        username,
+        password=None,
+        key_filename=None,
+        port=22,
+        timeout=10,
+    ):
+        self.host = host
+        self.username = username
+        self.password = password
+        self.key_filename = key_filename
+        self.port = port
+        self.timeout = timeout
+
+        self.ssh = None
+        self.sftp = None
+
+    # -------------------------------
+    # Context Manager Support
+    # -------------------------------
+    def __enter__(self):
+        self.connect()
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.close()
+
+    # -------------------------------
+    # Connect
+    # -------------------------------
+    @retry(max_attempts=5, delay=5)
+    def connect(self):
+        try:
+            self.ssh = paramiko.SSHClient()
+            self.ssh.set_missing_host_key_policy(
+                paramiko.AutoAddPolicy()
+            )
+
+            self.ssh.connect(
+                hostname=self.host,
+                port=self.port,
+                username=self.username,
+                password=self.password,
+                key_filename=self.key_filename,
+                timeout=self.timeout,
+            )
+
+            self.sftp = self.ssh.open_sftp()
+
+            logging.info(f"Connected to {self.host}")
+
+        except Exception as e:
+            raise SFTPConnectionError(str(e))
+
+    # -------------------------------
+    # Close
+    # -------------------------------
+    def close(self):
+        if self.sftp:
+            self.sftp.close()
+
+        if self.ssh:
+            self.ssh.close()
+
+        logging.info("SFTP connection closed")
+
+    # -------------------------------
+    # Upload
+    # -------------------------------
+    def upload(self, local_path, remote_path):
+        self.sftp.put(local_path, remote_path)
+
+        logging.info(f"Uploaded: {local_path} -> {remote_path}")
+
+    # -------------------------------
+    # Download
+    # -------------------------------
+    def download(self, remote_path, local_path):
+        self.sftp.get(remote_path, local_path)
+
+        logging.info(f"Downloaded: {remote_path} -> {local_path}")
+
+    # -------------------------------
+    # List Files with Metadata
+    # -------------------------------
+    def list_files(self, remote_dir):
+        files = self.sftp.listdir_attr(remote_dir)
+
+        return [
+            {
+                "name": f.filename,
+                "path": f"{remote_dir}/{f.filename}",
+                "size": f.st_size,
+                "modified": datetime.fromtimestamp(f.st_mtime),
+            }
+            for f in files
+        ]
+
+    # -------------------------------
+    # Find Files by Pattern
+    # -------------------------------
+    def find_files(self, remote_dir, pattern="*"):
+        files = self.sftp.listdir_attr(remote_dir)
+
+        matched = [
+            f for f in files
+            if fnmatch.fnmatch(f.filename, pattern)
+        ]
+
+        return matched
+
+    # -------------------------------
+    # Get Latest Matching File
+    # -------------------------------
+    def get_latest_file(self, remote_dir, pattern="*"):
+        matched_files = self.find_files(remote_dir, pattern)
+
+        if not matched_files:
+            raise RemoteFileNotFoundError(
+                f"No files matching {pattern}"
+            )
+
+        latest = max(
+            matched_files,
+            key=lambda f: f.st_mtime
+        )
+
+        return {
+            "name": latest.filename,
+            "path": f"{remote_dir}/{latest.filename}",
+            "size": latest.st_size,
+            "modified": datetime.fromtimestamp(latest.st_mtime),
+        }
+
+    # -------------------------------
+    # Wait Until File Exists
+    # -------------------------------
+    def wait_for_file(
+        self,
+        remote_path,
+        retries=10,
+        delay=10,
+    ):
+        for attempt in range(1, retries + 1):
+            try:
+                self.sftp.stat(remote_path)
+
+                logging.info(f"File found: {remote_path}")
+                return True
+
+            except FileNotFoundError:
+                logging.info(
+                    f"Waiting for file "
+                    f"({attempt}/{retries})..."
+                )
+
+                if attempt < retries:
+                    time.sleep(delay)
+
+        raise RemoteFileNotFoundError(remote_path)
+
+    # -------------------------------
+    # Wait Until File Stable
+    # -------------------------------
+    def wait_until_stable(
+        self,
+        remote_path,
+        checks=3,
+        interval=5,
+    ):
+        stable_count = 0
+        previous_size = -1
+
+        while stable_count < checks:
+            current_size = self.sftp.stat(remote_path).st_size
+
+            if current_size == previous_size:
+                stable_count += 1
+            else:
+                stable_count = 0
+
+            previous_size = current_size
+
+            time.sleep(interval)
+
+        logging.info(f"File stable: {remote_path}")
+
